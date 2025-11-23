@@ -1,0 +1,109 @@
+import { API_BASE_URL, API_ENDPOINTS } from '@/constants/api';
+import { StorageService } from '@/utils/storage';
+import { User } from '@/types';
+
+export interface LoginCredentials {
+  phone: string;
+  password: string;
+}
+
+export interface SignupData {
+  phone: string;
+  firstName: string;
+  lastName: string;
+  password: string;
+  role: 'GUEST' | 'ADMIN' | 'STAFF';
+}
+
+/**
+ * Authentication service
+ * Follows Single Responsibility Principle - only handles auth API calls
+ */
+export class AuthService {
+  static async login(credentials: LoginCredentials): Promise<{ user: User; token: string }> {
+    const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.AUTH.LOGIN}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        phone: credentials.phone.replace(/\s/g, ''),
+        password: credentials.password,
+      }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Login failed');
+    }
+
+    return {
+      user: data.user,
+      token: data.token,
+    };
+  }
+
+  static async signup(data: SignupData): Promise<User> {
+    const email = `${data.phone.replace(/\s/g, '')}@forks.app`;
+
+    const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.USERS.BASE}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email,
+        phone: data.phone.replace(/\s/g, ''),
+        firstName: data.firstName.trim(),
+        lastName: data.lastName.trim(),
+        password: data.password,
+        role: data.role,
+      }),
+    });
+
+    const responseData = await response.json();
+
+    if (!response.ok) {
+      throw new Error(responseData.error || 'Signup failed');
+    }
+
+    return {
+      id: responseData.user.id,
+      email,
+      phone: data.phone.replace(/\s/g, ''),
+      firstName: data.firstName.trim(),
+      lastName: data.lastName.trim(),
+      role: data.role,
+    };
+  }
+
+  static async saveAuthData(user: User, token: string): Promise<void> {
+    await StorageService.setAuthToken(token);
+    await StorageService.setUserData(user);
+    await StorageService.setUserCreated(true);
+    await StorageService.setUserId(user.id);
+  }
+
+  static async logout(): Promise<void> {
+    try {
+      const token = await StorageService.getAuthToken();
+      
+      // Call logout API endpoint
+      await fetch(`${API_BASE_URL}${API_ENDPOINTS.AUTH.LOGOUT}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+      });
+    } catch (error) {
+      // Even if API call fails, continue with local logout
+      console.error('Error calling logout API:', error);
+    } finally {
+      // Always clear local storage
+      await StorageService.clearAll();
+    }
+  }
+}
+
