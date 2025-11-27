@@ -11,7 +11,16 @@
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
-        "NSCameraUsageDescription": "This app needs access to your camera to scan restaurant QR codes."
+        "NSCameraUsageDescription": "This app needs access to your camera to scan restaurant QR codes.",
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": true,
+          "NSExceptionDomains": {
+            "10.76.45.111:3000": {
+              "NSExceptionAllowsInsecureHTTPLoads": true,
+              "NSIncludesSubdomains": true
+            }
+          }
+        }
       }
     },
     "android": {
@@ -25,7 +34,8 @@
       "predictiveBackGestureEnabled": false,
       "permissions": [
         "CAMERA"
-      ]
+      ],
+      "usesCleartextTraffic": true
     },
     "web": {
       "output": "static",

@@ -1,7 +1,13 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
 import { STORAGE_KEYS } from '@/constants/storage';
-import { User, TableInfo } from '@/types';
+import { User, TableInfo, MenuItem } from '@/types';
+
+export interface LocalCartItem {
+  menuItemId: string;
+  quantity: number;
+  menuItem?: MenuItem; // Store full menu item for display
+}
 
 /**
  * Storage service for managing AsyncStorage operations
@@ -113,6 +119,66 @@ export class StorageService {
     }
   }
 
+  // Local cart data
+  static async getLocalCart(): Promise<LocalCartItem[]> {
+    try {
+      const data = await AsyncStorage.getItem(STORAGE_KEYS.LOCAL_CART);
+      return data ? JSON.parse(data) : [];
+    } catch (error) {
+      console.error('Error getting local cart:', error);
+      return [];
+    }
+  }
+
+  static async setLocalCart(cart: LocalCartItem[]): Promise<void> {
+    await AsyncStorage.setItem(STORAGE_KEYS.LOCAL_CART, JSON.stringify(cart));
+  }
+
+  static async clearLocalCart(): Promise<void> {
+    await AsyncStorage.removeItem(STORAGE_KEYS.LOCAL_CART);
+  }
+
+  static async addToLocalCart(menuItem: MenuItem, quantity: number = 1): Promise<LocalCartItem[]> {
+    const cart = await this.getLocalCart();
+    const existingIndex = cart.findIndex(item => item.menuItemId === menuItem.id);
+    
+    if (existingIndex >= 0) {
+      cart[existingIndex].quantity += quantity;
+    } else {
+      cart.push({
+        menuItemId: menuItem.id,
+        quantity,
+        menuItem,
+      });
+    }
+    
+    await this.setLocalCart(cart);
+    return cart;
+  }
+
+  static async updateLocalCartItem(menuItemId: string, quantity: number): Promise<LocalCartItem[]> {
+    const cart = await this.getLocalCart();
+    const existingIndex = cart.findIndex(item => item.menuItemId === menuItemId);
+    
+    if (existingIndex >= 0) {
+      if (quantity <= 0) {
+        cart.splice(existingIndex, 1);
+      } else {
+        cart[existingIndex].quantity = quantity;
+      }
+    }
+    
+    await this.setLocalCart(cart);
+    return cart;
+  }
+
+  static async removeFromLocalCart(menuItemId: string): Promise<LocalCartItem[]> {
+    const cart = await this.getLocalCart();
+    const filtered = cart.filter(item => item.menuItemId !== menuItemId);
+    await this.setLocalCart(filtered);
+    return filtered;
+  }
+
   // Clear all data
   static async clearAll(): Promise<void> {
     try {
@@ -124,6 +190,7 @@ export class StorageService {
         STORAGE_KEYS.SCANNED,
         STORAGE_KEYS.ORDER_ID,
         STORAGE_KEYS.TABLE_INFO,
+        STORAGE_KEYS.LOCAL_CART,
       ]);
       await this.removeAuthToken();
     } catch (error) {

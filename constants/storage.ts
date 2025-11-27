@@ -7,5 +7,6 @@ export const STORAGE_KEYS = {
   SCANNED: '@forks_qr_scanned',
   ORDER_ID: '@forks_order_id',
   TABLE_INFO: '@forks_table_info',
+  LOCAL_CART: '@forks_local_cart',
 } as const;
 

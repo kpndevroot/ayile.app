@@ -5,7 +5,6 @@ import { YStack, XStack } from '@tamagui/stacks';
 import { Button } from '@tamagui/button';
 import * as LucideIcons from '@tamagui/lucide-icons';
 import { DesignTokens } from '@/constants/design';
-import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 
 interface MenuItemCardProps {
@@ -89,13 +88,22 @@ export function MenuItemCard({
   };
 
   return (
-    <Card
-      padding="md"
+    <YStack
+      padding={DesignTokens.spacing.md}
       backgroundColor={DesignTokens.colors.neutral.white}
-      borderRadius="lg"
-      shadow="md"
+      borderRadius={DesignTokens.radius.lg}
       style={[
         styles.card,
+        {
+          // Remove all shadows completely - use subtle border instead
+          borderWidth: 1,
+          borderColor: DesignTokens.colors.neutral.gray200,
+          shadowColor: 'transparent',
+          shadowOffset: { width: 0, height: 0 },
+          shadowOpacity: 0,
+          shadowRadius: 0,
+          elevation: 0,
+        },
         orderQuantity > 0 && {
           borderWidth: 2,
           borderColor: DesignTokens.colors.primary.green,
@@ -298,13 +306,19 @@ export function MenuItemCard({
           </TouchableOpacity>
         )}
       </YStack>
-    </Card>
+    </YStack>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
     marginBottom: DesignTokens.spacing.md,
+    // Ensure no shadows are applied
+    shadowColor: 'transparent',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    elevation: 0,
   },
   imageContainer: {
     width: 100,

@@ -15,7 +15,7 @@ interface HomePageProps {
 
 /**
  * HomePage Component
- * Displays welcome screen with user profile and QR scan option for Guest users
+ * Displays welcome screen with user profile and QR scan option for Customer users
  */
 export function HomePage({ userData, onScanQR, onLogout }: HomePageProps) {
   const handleLogout = async () => {
@@ -44,8 +44,8 @@ export function HomePage({ userData, onScanQR, onLogout }: HomePageProps) {
   return (
     <ThemedView style={styles.container}>
       <ScrollView contentContainerStyle={styles.homeContent}>
-        {/* TopBar for Guest users */}
-        {userData?.role === 'GUEST' && (
+        {/* TopBar for Customer users */}
+        {userData?.role === 'CUSTOMER' && (
           <TopBar
             userName={userName}
             userRole={userData.role}
@@ -94,7 +94,7 @@ export function HomePage({ userData, onScanQR, onLogout }: HomePageProps) {
               </YStack>
             )}
 
-            {userData?.role === 'GUEST' && (
+            {userData?.role === 'CUSTOMER' && (
               <Button
                 onPress={onScanQR}
                 size="$5"
@@ -110,7 +110,7 @@ export function HomePage({ userData, onScanQR, onLogout }: HomePageProps) {
 
             <YStack gap="$3" marginTop="$4" width="100%">
               <Text fontSize="$4" color="$gray11" textAlign="center">
-                {userData?.role === 'GUEST' 
+                {userData?.role === 'CUSTOMER' 
                   ? 'Scan a QR code to view restaurant details'
                   : "You're all set! Start exploring the app."}
               </Text>

@@ -1,4 +1,10 @@
-export const API_BASE_URL = 'http://192.168.30.26:3000';
+export const API_BASE_URL = 'http://10.76.45.111:3000';
+
+// Unsplash API Configuration
+// Get your API key from: https://unsplash.com/developers
+// Add it to your .env file as: EXPO_PUBLIC_UNSPLASH_ACCESS_KEY=your_key_here
+export const UNSPLASH_ACCESS_KEY = process.env.EXPO_PUBLIC_UNSPLASH_ACCESS_KEY || '';
+export const UNSPLASH_API_URL = 'https://api.unsplash.com';
 
 export const API_ENDPOINTS = {
   AUTH: {

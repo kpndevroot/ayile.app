@@ -429,8 +429,8 @@ export function RestaurantDetails({ restaurant, onScanAgain, onLogout }: Restaur
     
     return (
       <YStack gap="$4">
-        {/* TopBar for Guest users */}
-        {userData?.role === 'GUEST' && (
+        {/* TopBar for Customer users */}
+        {userData?.role === 'CUSTOMER' && (
           <TopBar
             userName={userName}
             userRole={userData.role}

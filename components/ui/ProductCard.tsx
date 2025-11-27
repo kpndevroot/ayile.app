@@ -87,7 +87,7 @@ export function ProductCard({
                 color: DesignTokens.colors.primary.orange,
               }}
             >
-              ${price}
+              ₹{price}
             </Text>
 
             {showAddButton && onAddToCart && (

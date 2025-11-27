@@ -1,9 +1,11 @@
 import { useState, useCallback, useEffect } from 'react';
-import { ScrollView, StyleSheet, Alert, ActivityIndicator, FlatList, TouchableOpacity, RefreshControl } from 'react-native';
+import { ScrollView, StyleSheet, Alert, ActivityIndicator, FlatList, TouchableOpacity, RefreshControl, Animated, Platform } from 'react-native';
 import { Text } from '@tamagui/core';
 import { YStack, XStack } from '@tamagui/stacks';
 import { Button } from '@tamagui/button';
 import { useFocusEffect } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { ThemedView } from '@/components/themed-view';
 import { TopBar } from '@/components/ui/TopBar';
 import { OrderStatusScreen } from '@/components/order/OrderStatusScreen';
@@ -28,6 +30,7 @@ export default function OrderTab() {
   const [orderHistory, setOrderHistory] = useState<Order[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [refreshRotation] = useState(new Animated.Value(0));
 
   const fetchOrderDetails = async (orderId: string): Promise<Order | null> => {
     try {
@@ -60,10 +63,20 @@ export default function OrderTab() {
       if (response.ok && data.orders) {
         // Filter out the current active order if it exists
         const currentOrderId = await StorageService.getOrderId();
+        // Show all orders (including active ones in history, but prioritize completed ones)
         const filteredOrders = data.orders.filter(
-          (o: Order) => o.id !== currentOrderId && (o.status === 'DELIVERED' || o.status === 'CANCELLED')
+          (o: Order) => o.id !== currentOrderId
         );
-        setOrderHistory(filteredOrders);
+        // Sort: completed orders first, then by date
+        const sortedOrders = filteredOrders.sort((a: Order, b: Order) => {
+          const aCompleted = a.status === 'DELIVERED' || a.status === 'CANCELLED';
+          const bCompleted = b.status === 'DELIVERED' || b.status === 'CANCELLED';
+          if (aCompleted !== bCompleted) {
+            return aCompleted ? -1 : 1;
+          }
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        });
+        setOrderHistory(sortedOrders);
       }
     } catch (error) {
       console.error('Error fetching order history:', error);
@@ -81,7 +94,7 @@ export default function OrderTab() {
 
       if (userData) {
         setUserData(userData);
-        // Fetch order history for the user
+        // Always fetch order history for the user, regardless of restaurant
         if (userData.id) {
           await fetchOrderHistory(userData.id);
         }
@@ -107,6 +120,10 @@ export default function OrderTab() {
         } else {
           // Order not found, clear it from storage
           await clearOrderData();
+          // Refresh history after clearing
+          if (userData?.id) {
+            await fetchOrderHistory(userData.id);
+          }
         }
       } else {
         setOrder(null);
@@ -120,9 +137,38 @@ export default function OrderTab() {
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await loadData();
-    setRefreshing(false);
+    
+    // Animate refresh icon rotation
+    const rotateAnimation = Animated.loop(
+      Animated.timing(refreshRotation, {
+        toValue: 1,
+        duration: 1000,
+        useNativeDriver: true,
+      }),
+      { iterations: -1 }
+    );
+    rotateAnimation.start();
+    
+    try {
+      await loadData();
+    } finally {
+      // Stop rotation animation
+      rotateAnimation.stop();
+      Animated.timing(refreshRotation, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+      
+      setRefreshing(false);
+    }
   };
+
+  // Rotation animation for refresh icon
+  const rotation = refreshRotation.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg'],
+  });
 
   const getStatusColor = (status: OrderStatus): string => {
     switch (status) {
@@ -203,32 +249,62 @@ export default function OrderTab() {
   useFocusEffect(
     useCallback(() => {
       loadData();
+      
+      // Also check for refresh trigger from cart/other screens
+      const checkRefreshTrigger = async () => {
+        try {
+          const triggerRefresh = await AsyncStorage.getItem('@forks_refresh_orders');
+          if (triggerRefresh === 'true') {
+            await AsyncStorage.removeItem('@forks_refresh_orders');
+            await loadData();
+          }
+        } catch (error) {
+          console.error('Error checking refresh trigger:', error);
+        }
+      };
+      checkRefreshTrigger();
     }, [])
   );
 
-  // Auto-refresh order status every 10 seconds if order is active
+  // Auto-refresh order status and history every 10 seconds
   useEffect(() => {
-    if (!order || order.status === 'DELIVERED' || order.status === 'CANCELLED') {
-      return;
-    }
+    const refreshData = async () => {
+      const currentUserData = await StorageService.getUserData();
+      if (!currentUserData?.id) return;
 
-    const interval = setInterval(async () => {
-      const orderId = await StorageService.getOrderId();
-      if (orderId) {
-        const updatedOrder = await fetchOrderDetails(orderId);
+      // Refresh active order if exists
+      const currentOrderId = await StorageService.getOrderId();
+      if (currentOrderId) {
+        const updatedOrder = await fetchOrderDetails(currentOrderId);
         if (updatedOrder) {
           // If order becomes DELIVERED or CANCELLED, clear it
           if (updatedOrder.status === 'DELIVERED' || updatedOrder.status === 'CANCELLED') {
             await clearOrderData();
+            setOrder(null);
           } else {
             setOrder(updatedOrder);
           }
-        }
+        } else {
+          // Order not found, clear it
+          await clearOrderData();
+          setOrder(null);
       }
-    }, 10000); // Refresh every 10 seconds
+      } else {
+        setOrder(null);
+      }
+      
+      // Always refresh order history
+      await fetchOrderHistory(currentUserData.id);
+    };
+
+    // Initial refresh
+    refreshData();
+
+    // Set up interval for auto-refresh
+    const interval = setInterval(refreshData, 10000); // Refresh every 10 seconds
 
     return () => clearInterval(interval);
-  }, [order?.status, order?.id]);
+  }, []); // Run once on mount, then refresh every 10 seconds
 
   if (loading) {
     return (
@@ -283,42 +359,69 @@ export default function OrderTab() {
       <ScrollView 
         contentContainerStyle={styles.scrollContent}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor={DesignTokens.colors.orange[500]}
+            colors={[DesignTokens.colors.orange[500]]}
+            progressViewOffset={Platform.OS === 'android' ? 20 : 0}
+          />
         }
       >
-        {/* TopBar for Guest users */}
-        {userData?.role === 'GUEST' && (
+        {/* TopBar for Customer users */}
+        {userData?.role === 'CUSTOMER' && (
           <TopBar
-            userName={userData ? `${userData.firstName} ${userData.lastName}` : 'Guest'}
+            userName={userData ? `${userData.firstName} ${userData.lastName}` : 'Customer'}
             userRole={userData.role}
             onLogout={handleLogout}
           />
         )}
 
         <YStack gap="$4" padding="$4">
-          {/* No Active Order Section */}
-          <YStack alignItems="center" justifyContent="center" padding="$4" gap="$2">
-            <Text fontSize="$8" fontWeight="bold" textAlign="center" marginBottom="$2">
-              {!restaurant ? 'No Active Order 📦' : 'Order History 📋'}
-            </Text>
-            <Text fontSize="$4" color="$gray11" textAlign="center" marginBottom="$4">
-              {!restaurant
-                ? 'Please scan a QR code to view restaurant and place an order'
-                : 'You don\'t have any active orders. View your past orders below.'}
-            </Text>
+          {/* Header Section */}
+          <YStack gap="$2" marginBottom="$2">
+            <XStack justifyContent="space-between" alignItems="center">
+              <Text fontSize="$9" fontWeight="bold" color="$brown9">
+                Orders
+              </Text>
+              <TouchableOpacity
+                onPress={handleRefresh}
+                disabled={refreshing}
+                style={styles.refreshButton}
+                activeOpacity={0.7}
+              >
+                {refreshing ? (
+                  <ActivityIndicator size="small" color="#F97316" />
+                ) : (
+                  <MaterialIcons name="refresh" size={24} color="#F97316" />
+                )}
+              </TouchableOpacity>
+            </XStack>
+            {order && (
+              <Text fontSize="$4" color="$lightBrown5">
+                You have an active order. View it above.
+              </Text>
+            )}
+            {!order && (
+              <Text fontSize="$4" color="$lightBrown5">
+                {orderHistory.length > 0 
+                  ? `You have ${orderHistory.length} order${orderHistory.length !== 1 ? 's' : ''} in your history`
+                  : 'Your order history will appear here'}
+              </Text>
+            )}
           </YStack>
 
-          {/* Order History Section */}
-          {restaurant && (
+          {/* Order History Section - Always show when no active order */}
+          {!order && (
             <YStack gap="$3">
-              <Text fontSize="$7" fontWeight="bold">
+              <Text fontSize="$7" fontWeight="bold" color="$brown9">
                 Order History
               </Text>
               
               {loadingHistory ? (
                 <YStack padding="$6" alignItems="center" gap="$3">
-                  <ActivityIndicator size="large" color="#007AFF" />
-                  <Text fontSize="$4" color="$gray11">
+                  <ActivityIndicator size="large" color="#F97316" />
+                  <Text fontSize="$4" color="$lightBrown5">
                     Loading order history...
                   </Text>
                 </YStack>
@@ -332,22 +435,24 @@ export default function OrderTab() {
                     >
                       <Card
                         padding="md"
-                        backgroundColor={DesignTokens.colors.neutral.white}
+                        backgroundColor="white"
                         borderRadius="lg"
                         shadow="sm"
+                        style={{
+                          borderWidth: 1,
+                          borderColor: '#E8E0D6',
+                        }}
                       >
                         <YStack gap="$3">
                           <XStack justifyContent="space-between" alignItems="flex-start">
                             <YStack flex={1} gap="$2">
                               <XStack gap="$2" alignItems="center" flexWrap="wrap">
                                 <Text
-                                  style={{
-                                    fontSize: DesignTokens.typography.fontSize.lg,
-                                    fontWeight: DesignTokens.typography.fontWeight.bold,
-                                    color: DesignTokens.colors.neutral.gray900,
-                                  }}
+                                  fontSize={18}
+                                  fontWeight="700"
+                                  color="$brown9"
                                 >
-                                  Order #{historyOrder.id.substring(0, 8)}
+                                  Order #{historyOrder.id.substring(0, 8).toUpperCase()}
                                 </Text>
                                 <Badge
                                   variant={
@@ -355,35 +460,36 @@ export default function OrderTab() {
                                       ? 'success'
                                       : historyOrder.status === 'CANCELLED'
                                       ? 'error'
-                                      : 'info'
+                                      : historyOrder.status === 'CONFIRMED' || historyOrder.status === 'PREPARING' || historyOrder.status === 'READY'
+                                      ? 'info'
+                                      : 'neutral'
                                   }
                                   size="sm"
                                 >
                                   {historyOrder.status}
                                 </Badge>
                               </XStack>
+                              {historyOrder.restaurant && (
+                                <Text
+                                  fontSize={14}
+                                  fontWeight="500"
+                                  color="$brown9"
+                                >
+                                  {historyOrder.restaurant.name || 'Restaurant'}
+                                </Text>
+                              )}
                               <Text
-                                style={{
-                                  fontSize: DesignTokens.typography.fontSize.sm,
-                                  color: DesignTokens.colors.neutral.gray600,
-                                }}
-                              >
-                                {historyOrder.restaurant?.name || 'Restaurant'}
-                              </Text>
-                              <Text
-                                style={{
-                                  fontSize: DesignTokens.typography.fontSize.sm,
-                                  color: DesignTokens.colors.neutral.gray500,
-                                }}
+                                fontSize={12}
+                                fontWeight="400"
+                                color="$lightBrown5"
                               >
                                 {formatDate(historyOrder.createdAt)}
                               </Text>
                               {historyOrder.orderItems && historyOrder.orderItems.length > 0 && (
                                 <Text
-                                  style={{
-                                    fontSize: DesignTokens.typography.fontSize.sm,
-                                    color: DesignTokens.colors.neutral.gray500,
-                                  }}
+                                  fontSize={12}
+                                  fontWeight="400"
+                                  color="$lightBrown5"
                                 >
                                   {historyOrder.orderItems.length} item{historyOrder.orderItems.length !== 1 ? 's' : ''}
                                 </Text>
@@ -391,11 +497,9 @@ export default function OrderTab() {
                             </YStack>
                             <YStack alignItems="flex-end" gap="$1">
                               <Text
-                                style={{
-                                  fontSize: DesignTokens.typography.fontSize.xl,
-                                  fontWeight: DesignTokens.typography.fontWeight.bold,
-                                  color: DesignTokens.colors.primary.blue,
-                                }}
+                                fontSize={20}
+                                fontWeight="700"
+                                color="$orange6"
                               >
                                 ₹{parseFloat(historyOrder.totalAmount.toString()).toFixed(2)}
                               </Text>
@@ -407,12 +511,20 @@ export default function OrderTab() {
                   ))}
                 </YStack>
               ) : (
-                <YStack padding="$6" alignItems="center" gap="$2">
-                  <Text fontSize="$5" fontWeight="600" color="$gray11">
-                    No Order History
+                <YStack 
+                  padding="$6" 
+                  alignItems="center" 
+                  gap="$3"
+                  backgroundColor="white"
+                  borderRadius="lg"
+                  borderWidth={1}
+                  borderColor="#E8E0D6"
+                >
+                  <Text fontSize={20} fontWeight="600" color="$brown9">
+                    No Orders Yet
                   </Text>
-                  <Text fontSize="$4" color="$gray10" textAlign="center">
-                    You haven't placed any orders yet. Start ordering to see your history here.
+                  <Text fontSize={14} color="$lightBrown5" textAlign="center">
+                    You haven't placed any orders yet.{'\n'}Start ordering to see your history here.
                   </Text>
                 </YStack>
               )}
@@ -431,6 +543,16 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     paddingBottom: 20,
+  },
+  refreshButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#FFF5EB',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#F97316',
   },
 });
 

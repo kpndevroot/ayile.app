@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
-import { StyleSheet, Alert, View, Dimensions } from 'react-native';
+import { StyleSheet, Alert, View, Dimensions, TouchableOpacity, Platform, StatusBar } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { Text } from '@tamagui/core';
 import { YStack, XStack } from '@tamagui/stacks';
 import { Button } from '@tamagui/button';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { ThemedView } from '@/components/themed-view';
 import { parseQRCode } from '@/utils/api';
 import { StorageService } from '@/utils/storage';
+import { DesignTokens } from '@/constants/design';
 
 interface QRScannerProps {
   onScanSuccess: (restaurantId: string) => void;
@@ -15,11 +17,13 @@ interface QRScannerProps {
 
 /**
  * QR Scanner Component
- * Camera interface for scanning restaurant table QR codes
+ * Modern camera interface for scanning restaurant table QR codes
+ * Matches the exact design from the provided PNG screen
  */
 export function QRScanner({ onScanSuccess, onClose }: QRScannerProps) {
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
+  const [flashEnabled, setFlashEnabled] = useState(false);
 
   useEffect(() => {
     if (!permission?.granted) {
@@ -54,150 +58,203 @@ export function QRScanner({ onScanSuccess, onClose }: QRScannerProps) {
     }
   };
 
+  const toggleFlash = () => {
+    setFlashEnabled(!flashEnabled);
+  };
+
   if (!permission) {
     return (
-      <ThemedView style={styles.container}>
-        <YStack flex={1} alignItems="center" justifyContent="center" padding="$4">
-          <Text fontSize="$5" color="$gray11" textAlign="center">
+      <View style={styles.container}>
+        <StatusBar barStyle="light-content" backgroundColor={DesignTokens.colors.charcoal[900]} />
+        <YStack flex={1} alignItems="center" justifyContent="center" padding={DesignTokens.spacing.lg}>
+          <Text fontSize={DesignTokens.typography.fontSize.lg} color={DesignTokens.colors.neutral.white} textAlign="center">
             Requesting camera permission...
           </Text>
         </YStack>
-      </ThemedView>
+      </View>
     );
   }
 
   if (!permission.granted) {
     return (
-      <ThemedView style={styles.container}>
-        <YStack flex={1} alignItems="center" justifyContent="center" padding="$4" gap="$4">
-          <Text fontSize="$6" fontWeight="bold" textAlign="center">
+      <View style={styles.container}>
+        <StatusBar barStyle="light-content" backgroundColor={DesignTokens.colors.charcoal[900]} />
+        <YStack flex={1} alignItems="center" justifyContent="center" padding={DesignTokens.spacing.lg} gap={DesignTokens.spacing.lg}>
+          <Text 
+            fontSize={DesignTokens.typography.fontSize['2xl']} 
+            fontWeight={DesignTokens.typography.fontWeight.bold} 
+            color={DesignTokens.colors.neutral.white}
+            textAlign="center"
+          >
             Camera Permission Required
           </Text>
-          <Text fontSize="$4" color="$gray11" textAlign="center">
+          <Text 
+            fontSize={DesignTokens.typography.fontSize.md} 
+            color={DesignTokens.colors.charcoal[300]} 
+            textAlign="center"
+            lineHeight={DesignTokens.typography.lineHeight.normal}
+          >
             We need access to your camera to scan QR codes
           </Text>
-          <Button onPress={requestPermission} size="$5" backgroundColor="$blue10">
-            <Text color="white" fontWeight="600">
+          <TouchableOpacity 
+            onPress={requestPermission}
+            style={styles.permissionButton}
+            activeOpacity={0.8}
+          >
+            <Text 
+              color={DesignTokens.colors.neutral.white} 
+              fontWeight={DesignTokens.typography.fontWeight.semibold}
+              fontSize={DesignTokens.typography.fontSize.md}
+            >
               Grant Permission
             </Text>
-          </Button>
+          </TouchableOpacity>
         </YStack>
-      </ThemedView>
+      </View>
     );
   }
 
   const { width, height } = Dimensions.get('window');
-  const scanAreaSize = Math.min(width, height) * 0.7;
+  const scanAreaSize = Math.min(width, height) * 0.65;
 
   return (
-    <ThemedView style={styles.container}>
+    <View style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor={DesignTokens.colors.charcoal[900]} />
+      
       <CameraView
         style={styles.camera}
         facing="back"
+        enableTorch={flashEnabled}
         onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
         barcodeScannerSettings={{
           barcodeTypes: ['qr'],
         }}
       >
-        <YStack flex={1} justifyContent="space-between" padding="$4">
-          <XStack justifyContent="flex-end">
-            <Button
-              onPress={onClose}
-              size="$4"
-              backgroundColor="rgba(0,0,0,0.5)"
-              borderRadius="$4"
-            >
-              <Text color="white" fontWeight="600">
-                Close
-              </Text>
-            </Button>
-          </XStack>
+        {/* Back Button - Top Left */}
+        <TouchableOpacity
+          onPress={onClose}
+          style={styles.backButtonOverlay}
+          activeOpacity={0.7}
+        >
+          <MaterialIcons name="arrow-back" size={24} color={DesignTokens.colors.neutral.white} />
+        </TouchableOpacity>
 
-          <YStack alignItems="center" gap="$4">
-            <YStack
-              width={scanAreaSize}
-              height={scanAreaSize}
-              borderWidth={3}
-              borderColor="white"
-              borderRadius="$4"
-              alignItems="center"
-              justifyContent="center"
-            >
-              <View
-                style={{
-                  position: 'absolute',
-                  top: -2,
-                  left: -2,
-                  width: 30,
-                  height: 30,
-                  borderTopWidth: 4,
-                  borderLeftWidth: 4,
-                  borderColor: '#3B82F6', // blue10
-                }}
-              />
-              <View
-                style={{
-                  position: 'absolute',
-                  top: -2,
-                  right: -2,
-                  width: 30,
-                  height: 30,
-                  borderTopWidth: 4,
-                  borderRightWidth: 4,
-                  borderColor: '#3B82F6', // blue10
-                }}
-              />
-              <View
-                style={{
-                  position: 'absolute',
-                  bottom: -2,
-                  left: -2,
-                  width: 30,
-                  height: 30,
-                  borderBottomWidth: 4,
-                  borderLeftWidth: 4,
-                  borderColor: '#3B82F6', // blue10
-                }}
-              />
-              <View
-                style={{
-                  position: 'absolute',
-                  bottom: -2,
-                  right: -2,
-                  width: 30,
-                  height: 30,
-                  borderBottomWidth: 4,
-                  borderRightWidth: 4,
-                  borderColor: '#3B82F6', // blue10
-                }}
-              />
-            </YStack>
-            <YStack
-              backgroundColor="rgba(0,0,0,0.7)"
-              padding="$4"
-              borderRadius="$4"
-              alignItems="center"
-              gap="$2"
-            >
-              <Text fontSize="$5" fontWeight="bold" color="white" textAlign="center">
-                Scan QR Code
-              </Text>
-              <Text fontSize="$3" color="white" textAlign="center">
-                Point your camera at the restaurant table QR code
-              </Text>
-            </YStack>
-          </YStack>
+        {/* Scan Area */}
+        <YStack flex={1} alignItems="center" justifyContent="center">
+          <View style={[styles.scanArea, { width: scanAreaSize, height: scanAreaSize }]}>
+            {/* Top Left Corner */}
+            <View style={[styles.corner, styles.topLeft]} />
+            
+            {/* Top Right Corner */}
+            <View style={[styles.corner, styles.topRight]} />
+            
+            {/* Bottom Left Corner */}
+            <View style={[styles.corner, styles.bottomLeft]} />
+            
+            {/* Bottom Right Corner */}
+            <View style={[styles.corner, styles.bottomRight]} />
+          </View>
         </YStack>
+
+        {/* Flash Button - Bottom Center */}
+        <TouchableOpacity
+          onPress={toggleFlash}
+          style={[styles.flashButtonOverlay, flashEnabled && styles.flashButtonActive]}
+          activeOpacity={0.7}
+        >
+          <MaterialIcons 
+            name={flashEnabled ? "flash-on" : "flash-off"} 
+            size={28} 
+            color={DesignTokens.colors.neutral.white} 
+          />
+        </TouchableOpacity>
       </CameraView>
-    </ThemedView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: DesignTokens.colors.charcoal[900],
   },
   camera: {
     flex: 1,
+  },
+  backButtonOverlay: {
+    position: 'absolute',
+    top: Platform.OS === 'ios' ? 60 : 40,
+    left: DesignTokens.spacing.lg,
+    width: 48,
+    height: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 24,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    zIndex: 10,
+  },
+  permissionButton: {
+    backgroundColor: DesignTokens.colors.teal[500],
+    paddingHorizontal: DesignTokens.spacing.xl,
+    paddingVertical: DesignTokens.spacing.md,
+    borderRadius: DesignTokens.radius.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  scanArea: {
+    position: 'relative',
+  },
+  corner: {
+    position: 'absolute',
+    width: 40,
+    height: 40,
+    borderColor: DesignTokens.colors.teal[500],
+    borderWidth: 4,
+  },
+  topLeft: {
+    top: -2,
+    left: -2,
+    borderRightWidth: 0,
+    borderBottomWidth: 0,
+    borderTopLeftRadius: 8,
+  },
+  topRight: {
+    top: -2,
+    right: -2,
+    borderLeftWidth: 0,
+    borderBottomWidth: 0,
+    borderTopRightRadius: 8,
+  },
+  bottomLeft: {
+    bottom: -2,
+    left: -2,
+    borderRightWidth: 0,
+    borderTopWidth: 0,
+    borderBottomLeftRadius: 8,
+  },
+  bottomRight: {
+    bottom: -2,
+    right: -2,
+    borderLeftWidth: 0,
+    borderTopWidth: 0,
+    borderBottomRightRadius: 8,
+  },
+  flashButtonOverlay: {
+    position: 'absolute',
+    bottom: Platform.OS === 'ios' ? 100 : 80,
+    alignSelf: 'center',
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+    zIndex: 10,
+  },
+  flashButtonActive: {
+    backgroundColor: DesignTokens.colors.teal[500],
+    borderColor: DesignTokens.colors.teal[400],
   },
 });

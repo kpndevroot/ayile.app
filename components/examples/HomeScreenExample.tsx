@@ -42,8 +42,10 @@ export function HomeScreenExample() {
         {/* Promotional Banner */}
         <View style={styles.section}>
           <PromotionalBanner
-            title="Make Your First Order and Get 50% Off"
-            subtitle="Limited time offer"
+            title="First Order Special!"
+            subtitle="Save big on your first delicious meal"
+            discount="50%"
+            urgencyText="Only 2 Hours Left"
             onPress={() => console.log('Promo clicked')}
           />
         </View>
@@ -51,9 +53,9 @@ export function HomeScreenExample() {
         {/* Category Tabs */}
         <View style={styles.section}>
           <XStack gap="$2" paddingHorizontal="$4">
-            <Button variant="primary" size="sm">Pizza</Button>
-            <Button variant="outline" size="sm">Pack</Button>
-            <Button variant="outline" size="sm">See All</Button>
+            <Button variant="primary" size="sm" onPress={() => console.log('Pizza clicked')}>Pizza</Button>
+            <Button variant="outline" size="sm" onPress={() => console.log('Pack clicked')}>Pack</Button>
+            <Button variant="outline" size="sm" onPress={() => console.log('See All clicked')}>See All</Button>
           </XStack>
         </View>
 
@@ -115,7 +117,7 @@ export function HomeScreenExample() {
             >
               Total: $38.00
             </Text>
-            <Button variant="success" size="lg" fullWidth>
+            <Button variant="success" size="lg" fullWidth onPress={() => console.log('Payment clicked')}>
               Make Payment
             </Button>
           </Card>

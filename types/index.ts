@@ -1,4 +1,4 @@
-export type UserRole = 'GUEST' | 'ADMIN' | 'STAFF';
+export type UserRole = 'CUSTOMER' | 'ADMIN' | 'STAFF';
 
 export type Step = 1 | 2 | 3 | 4;
 

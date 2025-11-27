@@ -9,10 +9,9 @@ export interface LoginCredentials {
 
 export interface SignupData {
   phone: string;
-  firstName: string;
-  lastName: string;
+  name: string;
   password: string;
-  role: 'GUEST' | 'ADMIN' | 'STAFF';
+  role?: 'CUSTOMER' | 'ADMIN' | 'STAFF' | 'GUEST';
 }
 
 /**
@@ -21,6 +20,7 @@ export interface SignupData {
  */
 export class AuthService {
   static async login(credentials: LoginCredentials): Promise<{ user: User; token: string }> {
+    console.log('login', credentials);
     const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.AUTH.LOGIN}`, {
       method: 'POST',
       headers: {
@@ -45,20 +45,16 @@ export class AuthService {
   }
 
   static async signup(data: SignupData): Promise<User> {
-    const email = `${data.phone.replace(/\s/g, '')}@forks.app`;
-
     const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.USERS.BASE}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        email,
         phone: data.phone.replace(/\s/g, ''),
-        firstName: data.firstName.trim(),
-        lastName: data.lastName.trim(),
+        name: data.name.trim(),
         password: data.password,
-        role: data.role,
+        role: data.role || 'CUSTOMER',
       }),
     });
 
@@ -68,14 +64,9 @@ export class AuthService {
       throw new Error(responseData.error || 'Signup failed');
     }
 
-    return {
-      id: responseData.user.id,
-      email,
-      phone: data.phone.replace(/\s/g, ''),
-      firstName: data.firstName.trim(),
-      lastName: data.lastName.trim(),
-      role: data.role,
-    };
+    // Return the user data from the API response
+    // The API already splits name into firstName and lastName
+    return responseData.user;
   }
 
   static async saveAuthData(user: User, token: string): Promise<void> {

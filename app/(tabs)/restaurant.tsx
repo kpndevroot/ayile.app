@@ -72,13 +72,13 @@ export default function RestaurantTab() {
     );
   }
 
-  const userName = userData ? `${userData.firstName} ${userData.lastName}` : 'Guest';
+  const userName = userData ? `${userData.firstName} ${userData.lastName}` : 'Customer';
 
   return (
     <ThemedView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* TopBar for Guest users */}
-        {userData?.role === 'GUEST' && (
+        {/* TopBar for Customer users */}
+        {userData?.role === 'CUSTOMER' && (
           <TopBar
             userName={userName}
             userRole={userData.role}
