@@ -34,7 +34,7 @@ export function MetricsCards({ metrics }: MetricsCardsProps) {
         <XStack key={card.label} flexBasis="48%" flexGrow={1}>
           <Card
             padding="lg"
-            backgroundColor={DesignTokens.colors.beige[200]}
+            backgroundColor={DesignTokens.colors.neutral.white}
             borderRadius="lg"
             shadow="sm"
             style={{ flex: 1 }}
@@ -49,7 +49,7 @@ export function MetricsCards({ metrics }: MetricsCardsProps) {
               <Text
                 fontSize={DesignTokens.typography.fontSize['3xl']}
                 fontWeight={DesignTokens.typography.fontWeight.bold}
-                color={DesignTokens.colors.brown[900]}
+                color={DesignTokens.colors.orange[500]}
               >
                 {card.value}
               </Text>

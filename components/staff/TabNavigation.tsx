@@ -55,7 +55,7 @@ export function TabNavigation({ activeTab, onTabChange, pendingCount }: TabNavig
               left={0}
               right={0}
               height={2}
-              backgroundColor={DesignTokens.colors.teal[500]}
+              backgroundColor={DesignTokens.colors.orange[500]}
               borderRadius={DesignTokens.radius.full}
             />
           )}
@@ -119,7 +119,7 @@ export function TabNavigation({ activeTab, onTabChange, pendingCount }: TabNavig
               left={0}
               right={0}
               height={2}
-              backgroundColor={DesignTokens.colors.teal[500]}
+              backgroundColor={DesignTokens.colors.orange[500]}
               borderRadius={DesignTokens.radius.full}
             />
           )}
@@ -161,7 +161,7 @@ export function TabNavigation({ activeTab, onTabChange, pendingCount }: TabNavig
               left={0}
               right={0}
               height={2}
-              backgroundColor={DesignTokens.colors.teal[500]}
+              backgroundColor={DesignTokens.colors.orange[500]}
               borderRadius={DesignTokens.radius.full}
             />
           )}

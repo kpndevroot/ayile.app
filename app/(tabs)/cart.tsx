@@ -505,7 +505,7 @@ export default function CartScreen() {
                 style={[styles.modalButton, styles.confirmButton, !tableNumberInput && styles.disabledButton]}
                 onPress={() => {
                   if (tableNumberInput) {
-                    processOrderPlacement(tableNumberInput);
+                    processOrderPlacement(parseInt(tableNumberInput));
                   }
                 }}
                 disabled={!tableNumberInput}

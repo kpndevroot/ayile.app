@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { ScrollView, StyleSheet, Alert, ActivityIndicator, FlatList, TouchableOpacity, RefreshControl, Animated, Platform } from 'react-native';
+import { ScrollView, StyleSheet, Alert, ActivityIndicator, FlatList, TouchableOpacity, RefreshControl, Animated, Platform, View } from 'react-native';
 import { Text } from '@tamagui/core';
 import { YStack, XStack } from '@tamagui/stacks';
 import { Button } from '@tamagui/button';
@@ -109,16 +109,8 @@ export default function OrderTab() {
       if (orderId) {
         const orderData = await fetchOrderDetails(orderId);
         if (orderData) {
-          // If order is DELIVERED or CANCELLED, clear it to allow new order
-          if (orderData.status === 'DELIVERED' || orderData.status === 'CANCELLED') {
-            await clearOrderData();
-            // Refresh history after clearing
-            if (userData?.id) {
-              await fetchOrderHistory(userData.id);
-            }
-          } else {
-            setOrder(orderData);
-          }
+          // If order is DELIVERED or CANCELLED, we still show it until dismissed
+          setOrder(orderData);
         } else {
           // Order not found, clear it from storage
           await clearOrderData();
@@ -139,7 +131,7 @@ export default function OrderTab() {
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    
+
     // Animate refresh icon rotation
     const rotateAnimation = Animated.loop(
       Animated.timing(refreshRotation, {
@@ -150,7 +142,7 @@ export default function OrderTab() {
       { iterations: -1 }
     );
     rotateAnimation.start();
-    
+
     try {
       await loadData();
     } finally {
@@ -161,7 +153,7 @@ export default function OrderTab() {
         duration: 300,
         useNativeDriver: true,
       }).start();
-      
+
       setRefreshing(false);
     }
   };
@@ -243,18 +235,18 @@ export default function OrderTab() {
             try {
               // Call logout API and clear storage
               await AuthService.logout();
-              
+
               // Clear all AsyncStorage keys
               await StorageService.clearAll();
-              
+
               // Navigate to index tab which will show login screen
-              router.replace('/(tabs)/');
+              router.replace('/');
             } catch (error) {
               console.error('Error logging out:', error);
               // Even if there's an error, try to clear storage and navigate
               try {
                 await StorageService.clearAll();
-                router.replace('/(tabs)/');
+                router.replace('/');
               } catch (clearError) {
                 console.error('Error clearing storage:', clearError);
                 Alert.alert('Error', 'Failed to logout. Please try again.');
@@ -269,7 +261,7 @@ export default function OrderTab() {
   useFocusEffect(
     useCallback(() => {
       loadData();
-      
+
       // Also check for refresh trigger from cart/other screens
       const checkRefreshTrigger = async () => {
         try {
@@ -297,22 +289,17 @@ export default function OrderTab() {
       if (currentOrderId) {
         const updatedOrder = await fetchOrderDetails(currentOrderId);
         if (updatedOrder) {
-          // If order becomes DELIVERED or CANCELLED, clear it
-          if (updatedOrder.status === 'DELIVERED' || updatedOrder.status === 'CANCELLED') {
-            await clearOrderData();
-            setOrder(null);
-          } else {
-            setOrder(updatedOrder);
-          }
+          // Update order state regardless of status
+          setOrder(updatedOrder);
         } else {
           // Order not found, clear it
           await clearOrderData();
           setOrder(null);
-      }
+        }
       } else {
         setOrder(null);
       }
-      
+
       // Always refresh order history
       await fetchOrderHistory(currentUserData.id);
     };
@@ -356,6 +343,7 @@ export default function OrderTab() {
           }
         }}
         onLogout={handleLogout}
+        onDismiss={async () => setSelectedOrder(null)}
       />
     );
   }
@@ -369,14 +357,20 @@ export default function OrderTab() {
         onBack={handleBack}
         onRefresh={handleRefresh}
         onLogout={handleLogout}
+        onDismiss={async () => {
+          await clearOrderData();
+          if (userData?.id) {
+            await fetchOrderHistory(userData.id);
+          }
+        }}
       />
     );
   }
 
   // Show order history when no active order
   return (
-    <ThemedView style={styles.container}>
-      <ScrollView 
+    <View style={styles.container}>
+      <ScrollView
         contentContainerStyle={styles.scrollContent}
         refreshControl={
           <RefreshControl
@@ -424,7 +418,7 @@ export default function OrderTab() {
             )}
             {!order && (
               <Text fontSize="$4" color="$lightBrown5">
-                {orderHistory.length > 0 
+                {orderHistory.length > 0
                   ? `You have ${orderHistory.length} order${orderHistory.length !== 1 ? 's' : ''} in your history`
                   : 'Your order history will appear here'}
               </Text>
@@ -437,7 +431,7 @@ export default function OrderTab() {
               <Text fontSize="$7" fontWeight="bold" color="$brown9">
                 Order History
               </Text>
-              
+
               {loadingHistory ? (
                 <YStack padding="$6" alignItems="center" gap="$3">
                   <ActivityIndicator size="large" color="#F97316" />
@@ -479,10 +473,10 @@ export default function OrderTab() {
                                     historyOrder.status === 'DELIVERED'
                                       ? 'success'
                                       : historyOrder.status === 'CANCELLED'
-                                      ? 'error'
-                                      : historyOrder.status === 'CONFIRMED' || historyOrder.status === 'PREPARING' || historyOrder.status === 'READY'
-                                      ? 'info'
-                                      : 'neutral'
+                                        ? 'error'
+                                        : historyOrder.status === 'CONFIRMED' || historyOrder.status === 'PREPARING' || historyOrder.status === 'READY'
+                                          ? 'info'
+                                          : 'neutral'
                                   }
                                   size="sm"
                                 >
@@ -531,9 +525,9 @@ export default function OrderTab() {
                   ))}
                 </YStack>
               ) : (
-                <YStack 
-                  padding="$6" 
-                  alignItems="center" 
+                <YStack
+                  padding="$6"
+                  alignItems="center"
                   gap="$3"
                   backgroundColor="white"
                   borderRadius="lg"
@@ -552,13 +546,14 @@ export default function OrderTab() {
           )}
         </YStack>
       </ScrollView>
-    </ThemedView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#FFFFFF',
   },
   scrollContent: {
     flexGrow: 1,

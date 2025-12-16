@@ -54,6 +54,8 @@ export interface OrderItem {
   menuItemId: string;
   quantity: number;
   price: string;
+  basePrice?: string;
+  totalPrice?: string;
   specialInstructions?: string | null;
   menuItem?: MenuItem;
 }

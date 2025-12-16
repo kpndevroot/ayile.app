@@ -17,6 +17,7 @@ interface OrderStatusScreenProps {
   onBack: () => void;
   onRefresh: () => Promise<void>;
   onLogout?: () => void;
+  onDismiss: () => Promise<void>;
 }
 
 interface ProgressStep {
@@ -31,12 +32,13 @@ interface ProgressStep {
  * Displays order status exactly as shown in the design
  * Auto-refreshes order status every 10 seconds for active orders
  */
-export function OrderStatusScreen({ 
-  order, 
-  restaurant, 
-  onBack, 
+export function OrderStatusScreen({
+  order,
+  restaurant,
+  onBack,
   onRefresh,
-  onLogout 
+  onLogout,
+  onDismiss
 }: OrderStatusScreenProps) {
   const router = useRouter();
   const [refreshing, setRefreshing] = useState(false);
@@ -78,7 +80,7 @@ export function OrderStatusScreen({
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    
+
     // Animate refresh icon rotation
     const rotateAnimation = Animated.loop(
       Animated.timing(refreshRotation, {
@@ -89,7 +91,7 @@ export function OrderStatusScreen({
       { iterations: -1 }
     );
     rotateAnimation.start();
-    
+
     try {
       await onRefresh();
     } finally {
@@ -100,7 +102,7 @@ export function OrderStatusScreen({
         duration: 300,
         useNativeDriver: true,
       }).start();
-      
+
       setRefreshing(false);
     }
   };
@@ -127,22 +129,22 @@ export function OrderStatusScreen({
             try {
               // Call logout API and clear storage
               await AuthService.logout();
-              
+
               // Clear all AsyncStorage keys
               await StorageService.clearAll();
-              
+
               // Call the onLogout callback if provided
               onLogout?.();
-              
+
               // Navigate to index tab which will show login screen
-              router.replace('/(tabs)/');
+              router.replace('/');
             } catch (error) {
               console.error('Error logging out:', error);
               // Even if there's an error, try to clear storage and navigate
               try {
                 await StorageService.clearAll();
                 onLogout?.();
-                router.replace('/(tabs)/');
+                router.replace('/');
               } catch (clearError) {
                 console.error('Error clearing storage:', clearError);
                 Alert.alert('Error', 'Failed to logout. Please try again.');
@@ -156,6 +158,9 @@ export function OrderStatusScreen({
 
   // Calculate estimated arrival time (15-20 minutes from order time)
   const getEstimatedArrival = (): string => {
+    if (currentOrder.status === 'DELIVERED') {
+      return 'Arrived';
+    }
     const orderDate = new Date(currentOrder.createdAt);
     const estimatedMinutes = currentOrder.status === 'PREPARING' ? 15 : 20;
     const arrivalTime = new Date(orderDate.getTime() + estimatedMinutes * 60000);
@@ -227,7 +232,7 @@ export function OrderStatusScreen({
 
   return (
     <ThemedView style={styles.container}>
-      <ScrollView 
+      <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -249,10 +254,10 @@ export function OrderStatusScreen({
             onScanAnotherQR={onBack}
           />
         )}
-        
+
         {/* Header */}
-        <XStack 
-          alignItems="center" 
+        <XStack
+          alignItems="center"
           justifyContent="space-between"
           paddingHorizontal={20}
           paddingTop={orderUserData?.role === 'CUSTOMER' ? 12 : 60}
@@ -262,9 +267,9 @@ export function OrderStatusScreen({
           <TouchableOpacity onPress={onBack} style={styles.backButton}>
             <MaterialIcons name="arrow-back" size={24} color="#000000" />
           </TouchableOpacity>
-          <Text 
-            fontSize={20} 
-            fontWeight="700" 
+          <Text
+            fontSize={20}
+            fontWeight="700"
             color={DesignTokens.colors.brown[900]}
             style={styles.headerTitle}
           >
@@ -284,25 +289,32 @@ export function OrderStatusScreen({
           </TouchableOpacity>
         </XStack>
 
-        <YStack 
-          paddingHorizontal={20} 
+        <YStack
+          paddingHorizontal={20}
           paddingTop={20}
           paddingBottom={100}
           backgroundColor={DesignTokens.colors.background.light}
         >
           {/* Status Card with Chef Image */}
           <YStack
-            backgroundColor={DesignTokens.colors.beige[200]}
+            backgroundColor={currentOrder.status === 'DELIVERED' ? '#DCFCE7' : DesignTokens.colors.beige[200]}
             borderRadius={20}
             padding={24}
             alignItems="center"
             marginBottom={24}
             style={styles.statusCard}
           >
-            {/* Chef Image Placeholder */}
+            {/* Chef/Status Image Placeholder */}
             <View style={styles.chefImageContainer}>
-              <View style={styles.chefImageCircle}>
-                <MaterialIcons name="restaurant" size={60} color="#FFFFFF" />
+              <View style={[
+                styles.chefImageCircle,
+                currentOrder.status === 'DELIVERED' && { backgroundColor: DesignTokens.colors.semantic.success }
+              ]}>
+                <MaterialIcons
+                  name={currentOrder.status === 'DELIVERED' ? "check-circle" : "restaurant"}
+                  size={60}
+                  color="#FFFFFF"
+                />
               </View>
             </View>
 
@@ -315,19 +327,21 @@ export function OrderStatusScreen({
               marginTop={16}
               marginBottom={8}
             >
-              Our chefs are working on your order!
+              {currentOrder.status === 'DELIVERED'
+                ? 'Your order has been delivered!'
+                : 'Our chefs are working on your order!'}
             </Text>
 
             {/* Estimated Arrival Label */}
             <Text
               fontSize={12}
               fontWeight="600"
-              color={DesignTokens.colors.orange[500]}
+              color={currentOrder.status === 'DELIVERED' ? DesignTokens.colors.semantic.success : DesignTokens.colors.orange[500]}
               textTransform="uppercase"
               letterSpacing={1}
               marginTop={8}
             >
-              ESTIMATED ARRIVAL
+              {currentOrder.status === 'DELIVERED' ? 'STATUS' : 'ESTIMATED ARRIVAL'}
             </Text>
 
             {/* Estimated Time */}
@@ -358,8 +372,8 @@ export function OrderStatusScreen({
                       <View
                         style={[
                           styles.progressCircle,
-                          isActive 
-                            ? styles.progressCircleActive 
+                          isActive
+                            ? styles.progressCircleActive
                             : styles.progressCircleInactive
                         ]}
                       >
@@ -379,7 +393,7 @@ export function OrderStatusScreen({
                         textAlign="center"
                       >
                         {step.label}
-              </Text>
+                      </Text>
                     </View>
 
                     {/* Connector Line */}
@@ -428,75 +442,75 @@ export function OrderStatusScreen({
               marginTop={12}
               gap={16}
             >
-            <XStack justifyContent="space-between">
+              <XStack justifyContent="space-between">
                 <Text fontSize={14} color={DesignTokens.colors.lightBrown[500]}>
                   Order ID:
                 </Text>
                 <Text fontSize={14} fontWeight="600" color={DesignTokens.colors.brown[900]}>
                   {currentOrder.id.substring(0, 8).toUpperCase()}
-              </Text>
-            </XStack>
-            <XStack justifyContent="space-between">
+                </Text>
+              </XStack>
+              <XStack justifyContent="space-between">
                 <Text fontSize={14} color={DesignTokens.colors.lightBrown[500]}>
                   Restaurant:
                 </Text>
                 <Text fontSize={14} fontWeight="600" color={DesignTokens.colors.brown[900]}>
                   {restaurant.name}
                 </Text>
-            </XStack>
-            {currentOrder.table && (
-              <XStack justifyContent="space-between">
+              </XStack>
+              {currentOrder.table && (
+                <XStack justifyContent="space-between">
                   <Text fontSize={14} color={DesignTokens.colors.lightBrown[500]}>
                     Table:
                   </Text>
                   <Text fontSize={14} fontWeight="600" color={DesignTokens.colors.brown[900]}>
-                  {currentOrder.table.tableNumber || currentOrder.table.uniqueId}
-                </Text>
-              </XStack>
-            )}
-            <XStack justifyContent="space-between">
+                    {currentOrder.table.tableNumber || currentOrder.table.uniqueId}
+                  </Text>
+                </XStack>
+              )}
+              <XStack justifyContent="space-between">
                 <Text fontSize={14} color={DesignTokens.colors.lightBrown[500]}>
                   Placed:
                 </Text>
                 <Text fontSize={14} fontWeight="600" color={DesignTokens.colors.brown[900]}>
-                {formatDate(currentOrder.createdAt)}
-              </Text>
-            </XStack>
+                  {formatDate(currentOrder.createdAt)}
+                </Text>
+              </XStack>
               <XStack justifyContent="space-between" marginTop={8}>
                 <Text fontSize={18} fontWeight="700" color={DesignTokens.colors.brown[900]}>
                   Total:
                 </Text>
                 <Text fontSize={20} fontWeight="700" color={DesignTokens.colors.orange[500]}>
-                ₹{parseFloat(currentOrder.totalAmount.toString()).toFixed(2)}
-              </Text>
-            </XStack>
+                  ₹{parseFloat((currentOrder.totalAmount || 0).toString()).toFixed(2)}
+                </Text>
+              </XStack>
 
-          {currentOrder.orderItems && currentOrder.orderItems.length > 0 && (
+              {currentOrder.orderItems && currentOrder.orderItems.length > 0 && (
                 <YStack marginTop={16} gap={12}>
                   <Text fontSize={16} fontWeight="700" color={DesignTokens.colors.brown[900]} marginBottom={8}>
-                Order Items ({currentOrder.orderItems.length})
-              </Text>
-              {currentOrder.orderItems.map((item) => (
-                <XStack
-                  key={item.id}
-                  justifyContent="space-between"
-                      paddingVertical={8}
-                  borderBottomWidth={1}
-                      borderBottomColor={DesignTokens.colors.beige[200]}
-                >
-                  <YStack flex={1}>
-                        <Text fontSize={14} fontWeight="600" color={DesignTokens.colors.brown[900]}>
-                      {item.menuItem?.name || 'Menu Item'}
-                    </Text>
-                        <Text fontSize={12} color={DesignTokens.colors.lightBrown[500]} marginTop={4}>
-                      Qty: {item.quantity} × ₹{parseFloat(item.price.toString()).toFixed(2)}
-                    </Text>
-                  </YStack>
-                      <Text fontSize={14} fontWeight="700" color={DesignTokens.colors.brown[900]}>
-                    ₹{(parseFloat(item.price.toString()) * item.quantity).toFixed(2)}
+                    Order Items ({currentOrder.orderItems.length})
                   </Text>
-                </XStack>
-              ))}
+                  {currentOrder.orderItems.map((item) => (
+                    <XStack
+                      key={item.id}
+                      justifyContent="space-between"
+                      paddingVertical={8}
+                      borderBottomWidth={1}
+                      borderBottomColor={DesignTokens.colors.beige[200]}
+                    >
+                      <YStack flex={1}>
+                        <Text fontSize={14} fontWeight="600" color={DesignTokens.colors.brown[900]}>
+                          {item.menuItem?.name || 'Menu Item'}
+                        </Text>
+                        <Text fontSize={12} color={DesignTokens.colors.lightBrown[500]} marginTop={4}>
+                          Qty: {item.quantity} × ₹{parseFloat((item.basePrice || item.price || 0).toString()).toFixed(2)}
+                        </Text>
+                      </YStack>
+                      <Text fontSize={14} fontWeight="700" color={DesignTokens.colors.brown[900]}>
+                        ₹{parseFloat((item.totalPrice || (parseFloat((item.basePrice || item.price || 0).toString()) * item.quantity)).toString()).toFixed(2)}
+                      </Text>
+                    </XStack>
+                  ))}
                 </YStack>
               )}
             </YStack>
@@ -516,30 +530,66 @@ export function OrderStatusScreen({
         gap={12}
         style={styles.bottomButtons}
       >
-        {/* Need Help Button */}
-        <TouchableOpacity
-          style={styles.helpButton}
-          activeOpacity={0.8}
-          onPress={() => {
-            Alert.alert('Need Help?', 'Contact restaurant support for assistance with your order.');
-          }}
-        >
-          <MaterialIcons name="help-outline" size={20} color={DesignTokens.colors.orange[500]} />
-          <Text
-            fontSize={16}
-            fontWeight="600"
-            color={DesignTokens.colors.orange[500]}
-            marginLeft={8}
+        {/* Need Help Button or Dismiss */}
+        {currentOrder.status === 'DELIVERED' ? (
+          <TouchableOpacity
+            style={[styles.helpButton, { backgroundColor: DesignTokens.colors.neutral.gray200 }]}
+            activeOpacity={0.8}
+            onPress={() => {
+              Alert.alert(
+                'Dismiss Order',
+                'Are you sure you want to dismiss this order?',
+                [
+                  { text: 'Cancel', style: 'cancel' },
+                  {
+                    text: 'Dismiss',
+                    onPress: async () => {
+                      await onDismiss();
+                    }
+                  }
+                ]
+              );
+            }}
           >
-            Need Help?
-          </Text>
-        </TouchableOpacity>
+            <MaterialIcons name="close" size={20} color={DesignTokens.colors.neutral.gray700} />
+            <Text
+              fontSize={16}
+              fontWeight="600"
+              color={DesignTokens.colors.neutral.gray700}
+              marginLeft={8}
+            >
+              Dismiss
+            </Text>
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity
+            style={styles.helpButton}
+            activeOpacity={0.8}
+            onPress={() => {
+              Alert.alert('Need Help?', 'Contact restaurant support for assistance with your order.');
+            }}
+          >
+            <MaterialIcons name="help-outline" size={20} color={DesignTokens.colors.orange[500]} />
+            <Text
+              fontSize={16}
+              fontWeight="600"
+              color={DesignTokens.colors.orange[500]}
+              marginLeft={8}
+            >
+              Need Help?
+            </Text>
+          </TouchableOpacity>
+        )}
 
         {/* Order More Button */}
         <TouchableOpacity
           style={styles.orderMoreButton}
           activeOpacity={0.8}
-          onPress={() => {
+          onPress={async () => {
+            // If delivered, we clear the current order so they can start fresh
+            if (currentOrder.status === 'DELIVERED') {
+              await onDismiss();
+            }
             router.push('/(tabs)' as any);
           }}
         >
@@ -554,7 +604,7 @@ export function OrderStatusScreen({
           </Text>
         </TouchableOpacity>
       </XStack>
-    </ThemedView>
+    </ThemedView >
   );
 }
 

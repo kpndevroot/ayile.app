@@ -26,7 +26,7 @@ export function DashboardOrderCard({
   return (
     <Card
       padding="lg"
-      backgroundColor={DesignTokens.colors.beige[200]}
+      backgroundColor={DesignTokens.colors.neutral.white}
       borderRadius="lg"
       shadow="sm"
     >
@@ -98,7 +98,7 @@ export function DashboardOrderCard({
                 paddingVertical="$2"
                 paddingHorizontal="$3"
                 borderRadius={DesignTokens.radius.md}
-                backgroundColor={DesignTokens.colors.teal[500]}
+                backgroundColor={DesignTokens.colors.orange[500]}
                 alignItems="center"
                 justifyContent="center"
               >
@@ -119,13 +119,13 @@ export function DashboardOrderCard({
               paddingHorizontal="$3"
               borderRadius={DesignTokens.radius.md}
               borderWidth={1}
-              borderColor={DesignTokens.colors.teal[500]}
+              borderColor={DesignTokens.colors.orange[500]}
               backgroundColor="transparent"
               alignItems="center"
               justifyContent="center"
             >
               <Text
-                color={DesignTokens.colors.teal[500]}
+                color={DesignTokens.colors.orange[500]}
                 fontWeight={DesignTokens.typography.fontWeight.semibold}
               >
                 View Details

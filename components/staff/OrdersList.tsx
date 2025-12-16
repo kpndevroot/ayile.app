@@ -30,7 +30,7 @@ export function OrdersList({
     return (
       <Card
         padding="lg"
-        backgroundColor={DesignTokens.colors.beige[200]}
+        backgroundColor={DesignTokens.colors.neutral.white}
         borderRadius="lg"
         shadow="sm"
       >
