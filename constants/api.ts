@@ -1,4 +1,4 @@
-export const API_BASE_URL = 'http://10.76.45.111:3000';
+export const API_BASE_URL = 'http://192.168.21.59:8080';
 
 // Unsplash API Configuration
 // Get your API key from: https://unsplash.com/developers
@@ -16,15 +16,18 @@ export const API_ENDPOINTS = {
     BASE: '/api/users',
     BY_ID: (id: string) => `/api/users/${id}`,
   },
-  RESTAURANTS: {
-    BY_ID: (id: string) => `/api/restaurants/${id}`,
-  },
   MENU_ITEMS: '/api/menu-items',
   ORDERS: {
     BASE: '/api/orders',
     BY_ID: (id: string) => `/api/orders/${id}`,
     ITEMS: (id: string) => `/api/orders/${id}/items`,
     ITEM: (orderId: string, itemId: string) => `/api/orders/${orderId}/items/${itemId}`,
+    UPDATE_STATUS: (id: string) => `/api/orders/${id}/status`,
+  },
+  RESTAURANTS: {
+    BY_ID: (id: string) => `/api/restaurants/${id}`,
+    TABLES: (id: string) => `/api/restaurants/${id}/tables`,
+    QR_CODE: (id: string) => `/api/restaurants/${id}/qr-code`,
   },
 } as const;
 

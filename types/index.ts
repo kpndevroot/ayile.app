@@ -11,6 +11,7 @@ export interface User {
   firstName: string;
   lastName: string;
   role: UserRole;
+  restaurantId?: string | null;
 }
 
 export interface Restaurant {

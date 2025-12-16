@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {  StyleSheet, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { LoadingScreen } from '@/components/ui/LoadingScreen';
 import { LoginScreen } from '@/components/auth/LoginScreen';
 import { SetupScreen } from '@/components/auth/SetupScreen';
@@ -25,6 +25,7 @@ const SCANNED_KEY = '@forks_qr_scanned';
 
 // Main Component
 export default function HomeScreen() {
+  const router = useRouter();
   const [userCreated, setUserCreated] = useState<boolean | null>(null);
   const [userData, setUserData] = useState<any>(null);
   const [restaurantData, setRestaurantData] = useState<any>(null);
@@ -82,11 +83,18 @@ export default function HomeScreen() {
       const scanned = await AsyncStorage.getItem(SCANNED_KEY);
       
       if (created === 'true' && data) {
+        const userInfo = JSON.parse(data);
         setUserCreated(true);
-        setUserData(JSON.parse(data));
+        setUserData(userInfo);
+        
+        // Redirect staff/ADMIN users to staff dashboard
+        if (userInfo.role === 'STAFF' || userInfo.role === 'ADMIN') {
+          router.replace('/(staff)/dashboard');
+          setLoading(false);
+          return;
+        }
         
         // If user is CUSTOMER and just created, show scanner
-        const userInfo = JSON.parse(data);
         if (userInfo.role === 'CUSTOMER' && scanned !== 'true') {
           setShowScanner(true);
           setScanning(true);
@@ -124,6 +132,12 @@ export default function HomeScreen() {
     setUserData(data);
     setShowLogin(false);
     
+    // Redirect staff/ADMIN users to staff dashboard
+    if (data.role === 'STAFF' || data.role === 'ADMIN') {
+      router.replace('/(staff)/dashboard');
+      return;
+    }
+    
     // If CUSTOMER user, show QR scanner immediately (new user, no scan yet)
     if (data.role === 'CUSTOMER') {
       setShowScanner(true);
@@ -135,6 +149,12 @@ export default function HomeScreen() {
     setUserCreated(true);
     setUserData(data);
     setShowLogin(false);
+    
+    // Redirect staff/ADMIN users to staff dashboard
+    if (data.role === 'STAFF' || data.role === 'ADMIN') {
+      router.replace('/(staff)/dashboard');
+      return;
+    }
     
     // If CUSTOMER user, check if they have scanned a QR code
     if (data.role === 'CUSTOMER') {
@@ -225,22 +245,45 @@ export default function HomeScreen() {
     try {
       // Call logout API and clear storage (if not already done by TopBar)
       await AuthService.logout();
+      
+      // Clear all AsyncStorage keys to prevent re-loading
+      await AsyncStorage.multiRemove([
+        USER_CREATED_KEY,
+        USER_DATA_KEY,
+        RESTAURANT_DATA_KEY,
+        SCANNED_KEY,
+      ]);
+      await StorageService.setOrderId(null);
+      await StorageService.clearLocalCart();
     } catch (error) {
       console.error('Error during logout:', error);
     } finally {
-      // Reset all state
+      // Reset all state - IMPORTANT: set showLogin first to ensure it takes priority
+      setShowLogin(true); // Show login screen - set this first
       setUserCreated(false);
       setUserData(null);
       setRestaurantData(null);
+      setTableInfo(null);
+      setOrderId(null);
       setShowScanner(false);
       setScanning(false);
-      setShowLogin(true); // Show login screen
       setLoading(false);
     }
   };
 
   if (loading) {
     return <LoadingScreen />;
+  }
+
+  // Show login screen if explicitly requested (e.g., after logout)
+  // This check must come BEFORE restaurantData and userCreated checks
+  if (showLogin) {
+    return (
+      <LoginScreen
+        onLoginSuccess={handleLoginSuccess}
+        onSwitchToSignup={() => setShowLogin(false)}
+      />
+    );
   }
 
   // Show QR scanner if scanning is active
@@ -251,7 +294,7 @@ export default function HomeScreen() {
   // Show menu listing screen if restaurant data exists
   if (restaurantData) {
     // Get table number from restaurant tables if available
-    let tableNumber = '24'; // Default
+    let tableNumber = '5'; // Default
     if (tableInfo?.uniqueId && restaurantData.tables) {
       const table = restaurantData.tables.find((t: any) => t.uniqueId === tableInfo.uniqueId);
       if (table?.tableNumber) {
@@ -259,11 +302,14 @@ export default function HomeScreen() {
       }
     }
     
+    // Use redesigned HomePage as menu screen
     return (
-      <MenuListingScreen
+      <HomePage
+        userData={userData}
+        onScanQR={handleScanQR}
+        onLogout={handleLogout}
         restaurantId={restaurantData.id}
         tableNumber={tableNumber}
-        onAddToCart={handleAddToCart}
       />
     );
   }
@@ -271,15 +317,6 @@ export default function HomeScreen() {
   // Show home page if user is created
   if (userCreated) {
     return <HomePage userData={userData} onScanQR={handleScanQR} onLogout={handleLogout} />;
-  }
-
-  if (showLogin) {
-    return (
-      <LoginScreen
-        onLoginSuccess={handleLoginSuccess}
-        onSwitchToSignup={() => setShowLogin(false)}
-      />
-    );
   }
 
   return (

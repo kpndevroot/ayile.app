@@ -37,18 +37,17 @@ export function QRScanner({ onScanSuccess, onClose }: QRScannerProps) {
     setScanned(true);
     
     try {
-      // Parse the QR code URL to extract restaurant ID and table unique ID
+      // Parse the QR code URL to extract restaurant ID
       const parsed = parseQRCode(data);
       
       if (parsed) {
-        const { restaurantId, tableUniqueId } = parsed;
+        const { restaurantId } = parsed;
         
-        // Store table info
-        await StorageService.setTableInfo({ uniqueId: tableUniqueId });
+        // Mark as scanned
         await StorageService.setScanned(true);
         onScanSuccess(restaurantId);
       } else {
-        Alert.alert('Invalid QR Code', 'This QR code is not a valid restaurant table code.');
+        Alert.alert('Invalid QR Code', 'This QR code is not a valid restaurant code.');
         setScanned(false);
       }
     } catch (error) {

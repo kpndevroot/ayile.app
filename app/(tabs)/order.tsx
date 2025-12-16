@@ -3,7 +3,7 @@ import { ScrollView, StyleSheet, Alert, ActivityIndicator, FlatList, TouchableOp
 import { Text } from '@tamagui/core';
 import { YStack, XStack } from '@tamagui/stacks';
 import { Button } from '@tamagui/button';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { ThemedView } from '@/components/themed-view';
@@ -13,6 +13,7 @@ import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Order, Restaurant, OrderStatus } from '@/types';
 import { StorageService } from '@/utils/storage';
+import { AuthService } from '@/services/authService';
 import { API_BASE_URL, API_ENDPOINTS } from '@/constants/api';
 import { authenticatedFetch } from '@/utils/api';
 import { DesignTokens } from '@/constants/design';
@@ -22,6 +23,7 @@ import { DesignTokens } from '@/constants/design';
  * Displays current order status and details
  */
 export default function OrderTab() {
+  const router = useRouter();
   const [order, setOrder] = useState<Order | null>(null);
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
   const [userData, setUserData] = useState<any>(null);
@@ -238,8 +240,26 @@ export default function OrderTab() {
           text: 'Logout',
           style: 'destructive',
           onPress: async () => {
-            await StorageService.clearAll();
-            // Navigation will be handled by the parent component
+            try {
+              // Call logout API and clear storage
+              await AuthService.logout();
+              
+              // Clear all AsyncStorage keys
+              await StorageService.clearAll();
+              
+              // Navigate to index tab which will show login screen
+              router.replace('/(tabs)/');
+            } catch (error) {
+              console.error('Error logging out:', error);
+              // Even if there's an error, try to clear storage and navigate
+              try {
+                await StorageService.clearAll();
+                router.replace('/(tabs)/');
+              } catch (clearError) {
+                console.error('Error clearing storage:', clearError);
+                Alert.alert('Error', 'Failed to logout. Please try again.');
+              }
+            }
           },
         },
       ]

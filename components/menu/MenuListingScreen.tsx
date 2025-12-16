@@ -23,11 +23,11 @@ import { API_BASE_URL, API_ENDPOINTS } from '@/constants/api';
 import { StorageService } from '@/utils/storage';
 import { DesignTokens } from '@/constants/design';
 import { PromotionalBanner } from '@/components/ui/PromotionalBanner';
-import { 
-  MenuCategory, 
-  PRIMARY_CATEGORIES, 
-  getCategoryLabel, 
-  filterItemsByCategory 
+import {
+  MenuCategory,
+  PRIMARY_CATEGORIES,
+  getCategoryLabel,
+  filterItemsByCategory
 } from '@/constants/categories';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -133,10 +133,10 @@ export function MenuListingScreen({
         showsVerticalScrollIndicator={false}
       >
         {/* Header Section */}
-        <YStack 
-          paddingHorizontal={20} 
-          paddingTop={Platform.OS === 'ios' ? 60 : 20} 
-          paddingBottom={16} 
+        <YStack
+          paddingHorizontal={20}
+          paddingTop={Platform.OS === 'ios' ? 60 : 20}
+          paddingBottom={16}
           backgroundColor="#FAF7F2"
         >
           <XStack
@@ -156,14 +156,14 @@ export function MenuListingScreen({
 
             {/* Right Icons */}
             <XStack alignItems="center" gap={16}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 activeOpacity={0.7}
                 style={styles.iconButton}
               >
                 <MaterialIcons name="favorite-border" size={22} color="#1A0F08" />
               </TouchableOpacity>
-              <TouchableOpacity 
-                activeOpacity={0.7} 
+              <TouchableOpacity
+                activeOpacity={0.7}
                 style={[styles.iconButton, styles.notificationButton]}
               >
                 <MaterialIcons name="notifications-none" size={22} color="#1A0F08" />
@@ -213,7 +213,7 @@ export function MenuListingScreen({
 
         {/* Promotional Banner */}
         <YStack marginVertical="$4">
-          <PromotionalBanner 
+          <PromotionalBanner
             title="First Order Special!"
             subtitle="Save big on your first delicious meal"
             discount="50%"
@@ -245,15 +245,15 @@ export function MenuListingScreen({
                     isActive && styles.categoryTabActive,
                   ]}
                 >
-                    <BodyMedium
-                      color={isActive ? DesignTokens.colors.neutral.white : DesignTokens.colors.charcoal[500]}
-                      style={{
-                        fontWeight: isActive ? '600' : '500',
-                        fontSize: 14,
-                      }}
-                    >
-                      {getCategoryLabel(category)}
-                    </BodyMedium>
+                  <BodyMedium
+                    color={isActive ? DesignTokens.colors.neutral.white : DesignTokens.colors.charcoal[500]}
+                    style={{
+                      fontWeight: isActive ? '600' : '500',
+                      fontSize: 14,
+                    }}
+                  >
+                    {getCategoryLabel(category)}
+                  </BodyMedium>
                 </TouchableOpacity>
               );
             })}
@@ -341,13 +341,13 @@ export function MenuListingScreen({
                         const scaleAnim = animatedItems[item.id] || new Animated.Value(1);
                         const isEven = index % 2 === 0;
                         const cardWidth = (SCREEN_WIDTH - (DesignTokens.spacing.lg * 3)) / 2; // Account for padding and gap
-                        
+
                         return (
-                          <View 
-                            key={item.id} 
+                          <View
+                            key={item.id}
                             style={[
-                              styles.gridItem, 
-                              { 
+                              styles.gridItem,
+                              {
                                 width: cardWidth,
                                 marginRight: isEven ? DesignTokens.spacing.md : 0,
                               }

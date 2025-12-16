@@ -6,6 +6,7 @@ import { ThemedView } from '@/components/themed-view';
 import { TopBar } from '@/components/ui/TopBar';
 import { Order, Restaurant, OrderStatus } from '@/types';
 import { StorageService } from '@/utils/storage';
+import { AuthService } from '@/services/authService';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { DesignTokens } from '@/constants/design';
 import { useRouter } from 'expo-router';
@@ -123,9 +124,30 @@ export function OrderStatusScreen({
           text: 'Logout',
           style: 'destructive',
           onPress: async () => {
-            await StorageService.clearAll();
-            onLogout?.();
-            onBack();
+            try {
+              // Call logout API and clear storage
+              await AuthService.logout();
+              
+              // Clear all AsyncStorage keys
+              await StorageService.clearAll();
+              
+              // Call the onLogout callback if provided
+              onLogout?.();
+              
+              // Navigate to index tab which will show login screen
+              router.replace('/(tabs)/');
+            } catch (error) {
+              console.error('Error logging out:', error);
+              // Even if there's an error, try to clear storage and navigate
+              try {
+                await StorageService.clearAll();
+                onLogout?.();
+                router.replace('/(tabs)/');
+              } catch (clearError) {
+                console.error('Error clearing storage:', clearError);
+                Alert.alert('Error', 'Failed to logout. Please try again.');
+              }
+            }
           },
         },
       ]

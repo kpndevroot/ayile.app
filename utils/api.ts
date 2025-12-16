@@ -34,17 +34,27 @@ export const authenticatedFetch = async (
 };
 
 /**
- * Parses QR code URL to extract restaurant ID and table unique ID
+ * Parses QR code URL to extract restaurant ID
+ * Supports formats:
+ * - /restaurant/{id}/order
+ * - /restaurant/{id}/table/{tableId}
+ * - http://host/restaurant/{id}/order
  */
-export const parseQRCode = (data: string): { restaurantId: string; tableUniqueId: string } | null => {
-  const urlPattern = /\/restaurant\/([^/]+)\/table\/([^/]+)/;
-  const match = data.match(urlPattern);
+export const parseQRCode = (data: string): { restaurantId: string } | null => {
+  // Match restaurant ID from various URL patterns
+  const urlPatterns = [
+    /\/restaurant\/([a-f0-9-]{36})\/order/i,  // /restaurant/{uuid}/order
+    /\/restaurant\/([a-f0-9-]{36})\/table/i,  // /restaurant/{uuid}/table
+    /\/restaurant\/([a-f0-9-]{36})/i,         // /restaurant/{uuid}
+  ];
   
-  if (match && match[1] && match[2]) {
-    return {
-      restaurantId: match[1],
-      tableUniqueId: match[2],
-    };
+  for (const pattern of urlPatterns) {
+    const match = data.match(pattern);
+    if (match && match[1]) {
+      return {
+        restaurantId: match[1],
+      };
+    }
   }
   
   return null;

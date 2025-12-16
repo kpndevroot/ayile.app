@@ -39,11 +39,24 @@ export default function ProfileScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
+              // Clear all storage
               await AuthService.logout();
+              
+              // Clear AsyncStorage keys to ensure clean state
+              await StorageService.clearAll();
+              
+              // Navigate to index tab which will show login screen
               router.replace('/(tabs)/');
             } catch (error) {
               console.error('Error logging out:', error);
-              Alert.alert('Error', 'Failed to logout. Please try again.');
+              // Even if there's an error, try to clear storage and navigate
+              try {
+                await StorageService.clearAll();
+                router.replace('/(tabs)/');
+              } catch (clearError) {
+                console.error('Error clearing storage:', clearError);
+                Alert.alert('Error', 'Failed to logout. Please try again.');
+              }
             }
           },
         },

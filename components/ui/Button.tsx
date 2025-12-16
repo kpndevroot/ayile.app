@@ -37,7 +37,7 @@ export function Button({
         return {
           backgroundColor: DesignTokens.colors.primary.blue,
           borderColor: DesignTokens.colors.primary.blue,
-          textColor: DesignTokens.colors.white,
+          textColor: DesignTokens.colors.neutral.white,
         };
       case 'secondary':
         return {
@@ -61,13 +61,13 @@ export function Button({
         return {
           backgroundColor: DesignTokens.colors.primary.green,
           borderColor: DesignTokens.colors.primary.green,
-          textColor: DesignTokens.colors.white,
+          textColor: DesignTokens.colors.neutral.white,
         };
       default:
         return {
           backgroundColor: DesignTokens.colors.primary.blue,
           borderColor: DesignTokens.colors.primary.blue,
-          textColor: DesignTokens.colors.white,
+          textColor: DesignTokens.colors.neutral.white,
         };
     }
   };

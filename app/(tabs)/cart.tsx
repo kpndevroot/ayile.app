@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { ScrollView, StyleSheet, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import { ScrollView, StyleSheet, TouchableOpacity, Alert, ActivityIndicator, Modal, TextInput } from 'react-native';
 import { Text } from '@tamagui/core';
 import { YStack, XStack } from '@tamagui/stacks';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
@@ -29,7 +29,7 @@ export default function CartScreen() {
     try {
       const cart = await StorageService.getLocalCart();
       setLocalCart(cart);
-      
+
       const restaurant = await StorageService.getRestaurantData();
       if (restaurant) {
         setRestaurantData(restaurant);
@@ -48,7 +48,7 @@ export default function CartScreen() {
   useFocusEffect(
     useCallback(() => {
       loadCartData();
-      
+
       // Check for refresh trigger from adding items
       const checkRefreshTrigger = async () => {
         try {
@@ -61,13 +61,13 @@ export default function CartScreen() {
           console.error('Error checking refresh trigger:', error);
         }
       };
-      
+
       // Check immediately
       checkRefreshTrigger();
-      
+
       // Check periodically while screen is focused (every 2 seconds)
       const refreshInterval = setInterval(checkRefreshTrigger, 2000);
-      
+
       return () => clearInterval(refreshInterval);
     }, [loadCartData])
   );
@@ -117,7 +117,84 @@ export default function CartScreen() {
     );
   };
 
+  const [showTableModal, setShowTableModal] = useState(false);
+  const [tableNumberInput, setTableNumberInput] = useState('');
+
+  const processOrderPlacement = async (tableNumber: number) => {
+    setIsSubmitting(true);
+    console.log(`DEBUG: order placing confirmed for table ${tableNumber}`);
+    try {
+      const userData = await StorageService.getUserData();
+      // Create order with all items
+      const orderData = {
+        userId: userData?.id,
+        restaurantId: restaurantData.id,
+        tableNumber: tableNumber,
+        orderItems: localCart.map(item => ({
+          menuItemId: item.menuItemId,
+          quantity: item.quantity,
+        })),
+      };
+
+      // Get auth token
+      const token = await StorageService.getAuthToken();
+      if (!token) {
+        Alert.alert('Error', 'Please log in to place an order');
+        return;
+      }
+
+      const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.ORDERS.BASE}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(orderData),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.order) {
+        // Clear local cart
+        await StorageService.clearLocalCart();
+        setLocalCart([]);
+
+        // Save order ID
+        await StorageService.setOrderId(data.order.id);
+
+        // Set flag to trigger order screen refresh
+        await AsyncStorage.setItem('@forks_refresh_orders', 'true');
+        await AsyncStorage.setItem('@forks_refresh_cart', 'true');
+
+        setShowTableModal(false);
+        setTableNumberInput('');
+
+        Alert.alert('Success', 'Order placed successfully!', [
+          {
+            text: 'OK',
+            onPress: () => router.push('/(tabs)/order'),
+          },
+        ]);
+      } else {
+        if (response.status === 409) {
+          Alert.alert(
+            'Table Has Active Order',
+            data.error || 'This table has an active order.'
+          );
+        } else {
+          Alert.alert('Error', data.error || 'Failed to place order');
+        }
+      }
+    } catch (error) {
+      console.error('Error placing order:', error);
+      Alert.alert('Error', 'Failed to place order. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handlePlaceOrder = async () => {
+    console.log("DEBUG: order placing clicked");
     if (localCart.length === 0) {
       Alert.alert('Error', 'Your cart is empty');
       return;
@@ -134,94 +211,36 @@ export default function CartScreen() {
       return;
     }
 
-    Alert.alert(
-      'Place Order',
-      `Total: ₹${orderTotal.toFixed(2)}\n\nConfirm your order?`,
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Confirm',
-          onPress: async () => {
-            setIsSubmitting(true);
-            try {
-              // Get table info
-              const tableInfo = await StorageService.getTableInfo();
-              let tableId = null;
-              let tableNumber = null;
+    // Check for stored table info
+    const tableInfo = await StorageService.getTableInfo();
+    let tableNumber = null;
 
-              if (tableInfo?.uniqueId && restaurantData.tables) {
-                const table = restaurantData.tables.find(
-                  (t: any) => t.uniqueId === tableInfo.uniqueId
-                );
-                if (table) {
-                  tableId = table.id;
-                  tableNumber = table.tableNumber ? String(table.tableNumber) : null;
-                }
-              }
+    if (tableInfo?.uniqueId && restaurantData.tables) {
+      const table = restaurantData.tables.find(
+        (t: any) => t.uniqueId === tableInfo.uniqueId
+      );
+      if (table) {
+        tableNumber = table.tableNumber ? String(table.tableNumber) : null;
+      }
+    }
 
-              // Create order with all items (backend will check for pending orders)
-              const orderData = {
-                userId: userData.id,
-                restaurantId: restaurantData.id,
-                tableId: tableId || null,
-                tableNumber: tableNumber || null,
-                orderItems: localCart.map(item => ({
-                  menuItemId: item.menuItemId,
-                  quantity: item.quantity,
-                })),
-              };
-
-              const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.ORDERS.BASE}`, {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(orderData),
-              });
-
-              const data = await response.json();
-
-              if (response.ok && data.order) {
-                // Clear local cart
-                await StorageService.clearLocalCart();
-                setLocalCart([]);
-                
-                // Save order ID
-                await StorageService.setOrderId(data.order.id);
-                
-                // Set flag to trigger order screen refresh
-                await AsyncStorage.setItem('@forks_refresh_orders', 'true');
-                await AsyncStorage.setItem('@forks_refresh_cart', 'true');
-                
-                Alert.alert('Success', 'Order placed successfully!', [
-                  {
-                    text: 'OK',
-                    onPress: () => router.push('/(tabs)/order'),
-                  },
-                ]);
-              } else {
-                if (response.status === 409) {
-                  Alert.alert(
-                    'Table Has Active Order',
-                    data.error || 'This table has an active order. Please wait for it to be completed or scan another table\'s QR code.'
-                  );
-                } else {
-                  Alert.alert('Error', data.error || 'Failed to place order');
-                }
-              }
-            } catch (error) {
-              console.error('Error placing order:', error);
-              Alert.alert('Error', 'Failed to place order. Please try again.');
-            } finally {
-              setIsSubmitting(false);
-            }
+    if (tableNumber) {
+      // Table info exists, confirm and place
+      Alert.alert(
+        'Place Order',
+        `Table: ${tableNumber}\nTotal: ₹${orderTotal.toFixed(2)}\n\nConfirm your order?`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Confirm',
+            onPress: () => processOrderPlacement(parseInt(tableNumber))
           },
-        },
-      ]
-    );
+        ]
+      );
+    } else {
+      // No table info, show modal
+      setShowTableModal(true);
+    }
   };
 
   if (localCart.length === 0) {
@@ -315,32 +334,32 @@ export default function CartScreen() {
             {localCart.map((cartItem) => {
               const itemPrice = parseFloat(cartItem.menuItem?.price || '0');
               const totalPrice = itemPrice * cartItem.quantity;
-              
+
               return (
-              <XStack
+                <XStack
                   key={cartItem.menuItemId}
-                backgroundColor="white"
-                borderRadius={12}
-                padding={16}
-                gap={12}
-                alignItems="center"
-              >
-                <YStack flex={1} gap={4}>
-                  <Text
-                    fontSize={16}
-                    fontWeight="600"
-                    color="$brown9"
-                  >
+                  backgroundColor="white"
+                  borderRadius={12}
+                  padding={16}
+                  gap={12}
+                  alignItems="center"
+                >
+                  <YStack flex={1} gap={4}>
+                    <Text
+                      fontSize={16}
+                      fontWeight="600"
+                      color="$brown9"
+                    >
                       {cartItem.menuItem?.name || 'Item'}
-                  </Text>
-                  <Text
-                    fontSize={14}
-                    fontWeight="400"
-                    color="$lightBrown5"
-                  >
+                    </Text>
+                    <Text
+                      fontSize={14}
+                      fontWeight="400"
+                      color="$lightBrown5"
+                    >
                       ₹{itemPrice.toFixed(2)} each
-                  </Text>
-                </YStack>
+                    </Text>
+                  </YStack>
 
                   {/* Quantity Controls */}
                   <XStack
@@ -389,15 +408,15 @@ export default function CartScreen() {
                   </XStack>
 
                   <YStack alignItems="flex-end" gap={2}>
-                <Text
-                  fontSize={18}
-                  fontWeight="700"
-                  color="$orange6"
-                >
+                    <Text
+                      fontSize={18}
+                      fontWeight="700"
+                      color="$orange6"
+                    >
                       ₹{totalPrice.toFixed(2)}
-                </Text>
+                    </Text>
                   </YStack>
-              </XStack>
+                </XStack>
               );
             })}
           </YStack>
@@ -445,6 +464,62 @@ export default function CartScreen() {
           </TouchableOpacity>
         </YStack>
       </ScrollView>
+      <Modal
+        visible={showTableModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowTableModal(false)}
+      >
+        <YStack flex={1} backgroundColor="rgba(0,0,0,0.5)" alignItems="center" justifyContent="center" padding={20}>
+          <YStack backgroundColor="white" borderRadius={16} padding={24} width="100%" maxWidth={340} space="$4">
+            <Text fontSize={20} fontWeight="700" color="#4A3B32" textAlign="center">
+              Enter Table Number
+            </Text>
+
+            <Text fontSize={14} color="#8D7A65" textAlign="center">
+              Please enter your table number to place the order.
+            </Text>
+
+            <TextInput
+              style={styles.tableInput}
+              value={tableNumberInput}
+              onChangeText={setTableNumberInput}
+              placeholder="e.g. 5"
+              keyboardType="numeric"
+              maxLength={3}
+              autoFocus
+            />
+
+            <XStack space="$3" marginTop="$2">
+              <TouchableOpacity
+                style={[styles.modalButton, styles.cancelButton]}
+                onPress={() => {
+                  setShowTableModal(false);
+                  setTableNumberInput('');
+                }}
+              >
+                <Text color="#4A3B32" fontWeight="600">Cancel</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.modalButton, styles.confirmButton, !tableNumberInput && styles.disabledButton]}
+                onPress={() => {
+                  if (tableNumberInput) {
+                    processOrderPlacement(tableNumberInput);
+                  }
+                }}
+                disabled={!tableNumberInput}
+              >
+                {isSubmitting ? (
+                  <ActivityIndicator size="small" color="white" />
+                ) : (
+                  <Text color="white" fontWeight="600">Confirm</Text>
+                )}
+              </TouchableOpacity>
+            </XStack>
+          </YStack>
+        </YStack>
+      </Modal>
     </ThemedView>
   );
 }
@@ -483,6 +558,32 @@ const styles = StyleSheet.create({
   },
   primaryButtonDisabled: {
     opacity: 0.6,
+  },
+  tableInput: {
+    borderWidth: 1,
+    borderColor: '#D4C4B0',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 18,
+    textAlign: 'center',
+    backgroundColor: '#FAF7F2',
+    color: '#4A3B32',
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cancelButton: {
+    backgroundColor: '#E5E7EB',
+  },
+  confirmButton: {
+    backgroundColor: '#F97316',
+  },
+  disabledButton: {
+    opacity: 0.5,
   },
 });
 

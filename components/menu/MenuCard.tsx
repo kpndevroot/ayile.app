@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { StyleSheet, TouchableOpacity, Animated, Dimensions } from 'react-native';
 import { Text } from '@tamagui/core';
 import { YStack, XStack } from '@tamagui/stacks';
@@ -6,6 +6,9 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { FoodImage } from '@/components/ui/FoodImage';
 import { MenuItem } from '@/types';
 import { DesignTokens } from '@/constants/design';
+import { MenuItemCustomizationModal } from './MenuItemCustomizationModal';
+import { StorageService } from '@/utils/storage';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -22,18 +25,19 @@ interface MenuCardProps {
  * Pixel-perfect recreation of the design shown in the reference image
  * Dark theme card with rounded corners, ratings, and precise spacing
  */
-export function MenuCard({ 
-  item, 
+export function MenuCard({
+  item,
   width = SCREEN_WIDTH * 0.44, // Slightly wider to match design proportions
-  scaleAnim = new Animated.Value(1), 
+  scaleAnim = new Animated.Value(1),
   onAddToCart,
   rating = 4.5 // Default rating
 }: MenuCardProps) {
-  
+  const [showCustomizationModal, setShowCustomizationModal] = useState(false);
+
   // Calculate dimensions to match the design exactly
   const cardHeight = width * 1.45; // Optimized aspect ratio from design
   const imageHeight = width * 0.75; // Image takes 75% of card width
-  
+
   const handleAddPress = () => {
     // Subtle animation matching the design's interaction feel
     Animated.sequence([
@@ -51,7 +55,51 @@ export function MenuCard({
       }),
     ]).start();
 
-    onAddToCart(item);
+    // Show customization modal instead of directly adding to cart
+    setShowCustomizationModal(true);
+  };
+
+  const handleAddToCartFromModal = async (
+    menuItem: MenuItem,
+    quantity: number,
+    selectedQuantityOption?: any,
+    selectedAddOns?: any[]
+  ) => {
+    try {
+      // Calculate final price per item (base + add-ons)
+      const basePrice = selectedQuantityOption
+        ? selectedQuantityOption.price
+        : parseFloat(menuItem.price);
+
+      const addOnsTotal = selectedAddOns
+        ? selectedAddOns.reduce((sum, addOn) => sum + addOn.price, 0)
+        : 0;
+
+      const pricePerItem = basePrice + addOnsTotal;
+
+      // Create a modified menu item with the selected options
+      // Store metadata about selected options in the item name or description
+      const cartItem: MenuItem = {
+        ...menuItem,
+        price: pricePerItem.toString(),
+        description: selectedQuantityOption
+          ? `${menuItem.description || ''} (${selectedQuantityOption.displayLabel})${selectedAddOns && selectedAddOns.length > 0 ? ` + ${selectedAddOns.map(a => a.name).join(', ')}` : ''}`.trim()
+          : menuItem.description,
+      };
+
+      // Add to cart using StorageService directly with the quantity
+      await StorageService.addToLocalCart(cartItem, quantity);
+
+      // Trigger cart refresh
+      await AsyncStorage.setItem('@forks_refresh_cart', 'true');
+
+      // Also call the original onAddToCart callback if needed for UI updates
+      if (onAddToCart) {
+        onAddToCart(cartItem);
+      }
+    } catch (error) {
+      console.error('Error adding item to cart from modal:', error);
+    }
   };
 
   return (
@@ -93,7 +141,7 @@ export function MenuCard({
         </YStack>
 
         {/* Content Section */}
-        <YStack 
+        <YStack
           paddingHorizontal={16}
           paddingTop={8}
           paddingBottom={16}
@@ -119,19 +167,19 @@ export function MenuCard({
           >
             {/* Price and Rating */}
             <YStack gap={2}>
-              <Text 
+              <Text
                 fontSize={16}
                 fontWeight="700"
                 color="#FFFFFF"
               >
                 ₹ {parseFloat(item.price).toFixed(0)}
               </Text>
-              
+
               {/* Star Rating */}
               <XStack alignItems="center" gap={4}>
-                <MaterialIcons 
-                  name="star" 
-                  size={14} 
+                <MaterialIcons
+                  name="star"
+                  size={14}
                   color="#FFD700" // Gold star color
                 />
                 <Text
@@ -143,7 +191,7 @@ export function MenuCard({
                 </Text>
               </XStack>
             </YStack>
-            
+
             {/* Add Button - Positioned at bottom right */}
             <TouchableOpacity
               onPress={handleAddPress}
@@ -154,10 +202,10 @@ export function MenuCard({
               ]}
               disabled={!item.isAvailable}
             >
-              <MaterialIcons 
-                name="add" 
-                size={20} 
-                color="#FFFFFF" 
+              <MaterialIcons
+                name="add"
+                size={20}
+                color="#FFFFFF"
               />
             </TouchableOpacity>
           </XStack>
@@ -193,6 +241,15 @@ export function MenuCard({
           )}
         </YStack>
       </YStack>
+
+      {/* Customization Modal */}
+      <MenuItemCustomizationModal
+        visible={showCustomizationModal}
+        item={item}
+        rating={rating}
+        onClose={() => setShowCustomizationModal(false)}
+        onAddToCart={handleAddToCartFromModal}
+      />
     </Animated.View>
   );
 }
@@ -207,7 +264,7 @@ const styles = StyleSheet.create({
     shadowColor: '#000000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
-    shadowRadius: 8,  
+    shadowRadius: 8,
   },
   imageContainer: {
     // Ensure image container has proper styling
