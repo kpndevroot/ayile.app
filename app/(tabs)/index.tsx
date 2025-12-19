@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import {  StyleSheet, Alert } from 'react-native';
+import { StyleSheet, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { LoadingScreen } from '@/components/ui/LoadingScreen';
 import { LoginScreen } from '@/components/auth/LoginScreen';
 import { SetupScreen } from '@/components/auth/SetupScreen';
-import { RestaurantDetails } from '@/components/restaurant/RestaurantDetails';
-import { MenuListingScreen } from '@/components/menu/MenuListingScreen';
+
 import { HomePage } from '@/components/home/HomePage';
 import { QRScanner } from '@/components/restaurant/QRScanner';
 import { AuthService } from '@/services/authService';
@@ -81,25 +80,25 @@ export default function HomeScreen() {
       const data = await AsyncStorage.getItem(USER_DATA_KEY);
       const restaurant = await AsyncStorage.getItem(RESTAURANT_DATA_KEY);
       const scanned = await AsyncStorage.getItem(SCANNED_KEY);
-      
+
       if (created === 'true' && data) {
         const userInfo = JSON.parse(data);
         setUserCreated(true);
         setUserData(userInfo);
-        
+
         // Redirect staff/ADMIN users to staff dashboard
         if (userInfo.role === 'STAFF' || userInfo.role === 'ADMIN') {
           router.replace('/(staff)/dashboard');
           setLoading(false);
           return;
         }
-        
+
         // If user is CUSTOMER and just created, show scanner
         if (userInfo.role === 'CUSTOMER' && scanned !== 'true') {
           setShowScanner(true);
           setScanning(true);
         }
-        
+
         // If restaurant data exists, show it
         if (restaurant) {
           setRestaurantData(JSON.parse(restaurant));
@@ -131,13 +130,13 @@ export default function HomeScreen() {
     setUserCreated(true);
     setUserData(data);
     setShowLogin(false);
-    
+
     // Redirect staff/ADMIN users to staff dashboard
     if (data.role === 'STAFF' || data.role === 'ADMIN') {
       router.replace('/(staff)/dashboard');
       return;
     }
-    
+
     // If CUSTOMER user, show QR scanner immediately (new user, no scan yet)
     if (data.role === 'CUSTOMER') {
       setShowScanner(true);
@@ -149,18 +148,18 @@ export default function HomeScreen() {
     setUserCreated(true);
     setUserData(data);
     setShowLogin(false);
-    
+
     // Redirect staff/ADMIN users to staff dashboard
     if (data.role === 'STAFF' || data.role === 'ADMIN') {
       router.replace('/(staff)/dashboard');
       return;
     }
-    
+
     // If CUSTOMER user, check if they have scanned a QR code
     if (data.role === 'CUSTOMER') {
       const scanned = await AsyncStorage.getItem(SCANNED_KEY);
       const restaurant = await AsyncStorage.getItem(RESTAURANT_DATA_KEY);
-      
+
       // If no restaurant scanned, show QR scanner immediately
       if (scanned !== 'true' && !restaurant) {
         setShowScanner(true);
@@ -176,7 +175,7 @@ export default function HomeScreen() {
     try {
       setScanning(false);
       setShowScanner(false);
-      
+
       const response = await fetch(`${API_BASE_URL}/api/restaurants/${restaurantId}`);
       const data = await response.json();
 
@@ -186,11 +185,11 @@ export default function HomeScreen() {
         setRestaurantData(data.restaurant);
         await AsyncStorage.setItem(RESTAURANT_DATA_KEY, JSON.stringify(data.restaurant));
         await AsyncStorage.setItem(SCANNED_KEY, 'true'); // Mark as scanned
-        
+
         // Clear order ID when switching restaurants
         setOrderId(null);
         await StorageService.setOrderId(null);
-        
+
         // Load table info if available
         const tableInfoData = await StorageService.getTableInfo();
         if (tableInfoData) {
@@ -232,7 +231,7 @@ export default function HomeScreen() {
     try {
       // Add item to local cart (no API call)
       await StorageService.addToLocalCart(menuItem, 1);
-      
+
       // Trigger cart refresh in CustomTabBar and cart screen
       await AsyncStorage.setItem('@forks_refresh_cart', 'true');
     } catch (error) {
@@ -245,7 +244,7 @@ export default function HomeScreen() {
     try {
       // Call logout API and clear storage (if not already done by TopBar)
       await AuthService.logout();
-      
+
       // Clear all AsyncStorage keys to prevent re-loading
       await AsyncStorage.multiRemove([
         USER_CREATED_KEY,
@@ -301,7 +300,7 @@ export default function HomeScreen() {
         tableNumber = String(table.tableNumber);
       }
     }
-    
+
     // Use redesigned HomePage as menu screen
     return (
       <HomePage

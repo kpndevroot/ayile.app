@@ -120,7 +120,7 @@ export default function CartScreen() {
   const [showTableModal, setShowTableModal] = useState(false);
   const [tableNumberInput, setTableNumberInput] = useState('');
 
-  const processOrderPlacement = async (tableNumber: number) => {
+  const processOrderPlacement = async (tableNumber: string) => {
     setIsSubmitting(true);
     console.log(`DEBUG: order placing confirmed for table ${tableNumber}`);
     try {
@@ -233,7 +233,7 @@ export default function CartScreen() {
           { text: 'Cancel', style: 'cancel' },
           {
             text: 'Confirm',
-            onPress: () => processOrderPlacement(parseInt(tableNumber))
+            onPress: () => processOrderPlacement(tableNumber)
           },
         ]
       );
@@ -505,7 +505,7 @@ export default function CartScreen() {
                 style={[styles.modalButton, styles.confirmButton, !tableNumberInput && styles.disabledButton]}
                 onPress={() => {
                   if (tableNumberInput) {
-                    processOrderPlacement(parseInt(tableNumberInput));
+                    processOrderPlacement(tableNumberInput);
                   }
                 }}
                 disabled={!tableNumberInput}

@@ -21,5 +21,4 @@ export type {
   OrderStatusOption,
 } from './UpdateOrderStatusModal';
 
-export { AddOptionModal } from './AddOptionModal';
-export type { AddOptionModalProps } from './AddOptionModal';
+

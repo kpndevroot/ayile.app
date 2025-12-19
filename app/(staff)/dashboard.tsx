@@ -27,7 +27,7 @@ export default function StaffDashboardScreen() {
     pending: 0,
     active: 0,
     complete: 0,
-    revenue: '$0.00',
+    revenue: '₹0.00',
   });
   const [orders, setOrders] = useState<StaffOrder[]>([]);
   const [restaurantName, setRestaurantName] = useState('Restaurant');

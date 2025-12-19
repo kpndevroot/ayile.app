@@ -1,4 +1,4 @@
-export const API_BASE_URL = 'http://192.168.21.59:8080';
+export const API_BASE_URL = 'http://10.152.23.111:8080';
 
 // Unsplash API Configuration
 // Get your API key from: https://unsplash.com/developers

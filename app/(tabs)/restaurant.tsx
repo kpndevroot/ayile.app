@@ -9,7 +9,7 @@ import { ThemedView } from '@/components/themed-view';
 import { TopBar } from '@/components/ui/TopBar';
 import { Restaurant } from '@/types';
 import { StorageService } from '@/utils/storage';
-import { API_BASE_URL, API_ENDPOINTS } from '@/constants/api';
+import { API_BASE_URL } from '@/constants/api';
 
 /**
  * Restaurant Details Tab

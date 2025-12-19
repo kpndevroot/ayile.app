@@ -68,7 +68,7 @@ export class StaffService {
           pending: 0,
           active: 0,
           complete: 0,
-          revenue: '$0.00',
+          revenue: '₹0.00',
         };
       }
 
@@ -102,7 +102,7 @@ export class StaffService {
           pending: 0,
           active: 0,
           complete: 0,
-          revenue: '$0.00',
+          revenue: '₹0.00',
         };
       }
 
@@ -137,7 +137,7 @@ export class StaffService {
         pending,
         active,
         complete,
-        revenue: `$${revenue}`,
+        revenue: `₹${revenue}`,
       };
 
       console.log('[StaffService] Calculated dashboard metrics:', {
@@ -157,7 +157,7 @@ export class StaffService {
         pending: 0,
         active: 0,
         complete: 0,
-        revenue: '$0.00',
+        revenue: '₹0.00',
       };
     }
   }
