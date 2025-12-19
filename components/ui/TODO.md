@@ -1,4 +1,4 @@
-[] socket integration for real time updates
+[X] socket integration for real time updates
 [] remove unsplash api integration
 [] image upload for menu items
 [] setup scan another restaurant qr code option

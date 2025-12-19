@@ -23,6 +23,7 @@ export const API_ENDPOINTS = {
     ITEMS: (id: string) => `/api/orders/${id}/items`,
     ITEM: (orderId: string, itemId: string) => `/api/orders/${orderId}/items/${itemId}`,
     UPDATE_STATUS: (id: string) => `/api/orders/${id}/status`,
+    WEBSOCKET: '/api/orders/ws',
   },
   RESTAURANTS: {
     BY_ID: (id: string) => `/api/restaurants/${id}`,

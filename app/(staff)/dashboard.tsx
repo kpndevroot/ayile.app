@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { ScrollView, ActivityIndicator, RefreshControl } from 'react-native';
 import { YStack } from '@tamagui/stacks';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -10,6 +10,7 @@ import { DashboardHeader } from '@/components/staff/DashboardHeader';
 import { MetricsCards, DashboardMetrics } from '@/components/staff/MetricsCards';
 import { TabNavigation, TabType } from '@/components/staff/TabNavigation';
 import { OrdersList } from '@/components/staff/OrdersList';
+import { websocketService } from '@/services/websocketService';
 
 /**
  * Staff Dashboard Screen
@@ -42,6 +43,64 @@ export default function StaffDashboardScreen() {
       isLoaded.current = true;
     }, [])
   );
+
+  // WebSocket connection for real-time order updates
+  useEffect(() => {
+    let unsubscribeMessage: (() => void) | null = null;
+    let unsubscribeConnection: (() => void) | null = null;
+
+    const setupWebSocket = async () => {
+      try {
+        // Connect to WebSocket
+        await websocketService.connect();
+
+        // Subscribe to restaurant updates (staff receives all orders from their restaurant)
+        const restaurantId = await StaffService.getRestaurantId();
+        if (restaurantId) {
+          websocketService.subscribeToRestaurant(restaurantId);
+        }
+
+        // Handle incoming messages
+        unsubscribeMessage = websocketService.onMessage((message) => {
+          if (message.type === 'order:created' || message.type === 'order:updated') {
+            // Reload data to get updated orders and metrics
+            loadData({ silent: true });
+          }
+        });
+
+        // Handle connection state changes
+        unsubscribeConnection = websocketService.onConnectionStateChange((connected) => {
+          if (connected) {
+            console.log('[StaffDashboard] WebSocket connected');
+            // Resubscribe to restaurant when reconnected
+            const resubscribe = async () => {
+              const restaurantId = await StaffService.getRestaurantId();
+              if (restaurantId) {
+                websocketService.subscribeToRestaurant(restaurantId);
+              }
+            };
+            resubscribe();
+          } else {
+            console.log('[StaffDashboard] WebSocket disconnected');
+          }
+        });
+      } catch (error) {
+        console.error('[StaffDashboard] Error setting up WebSocket:', error);
+      }
+    };
+
+    setupWebSocket();
+
+    // Cleanup on unmount
+    return () => {
+      if (unsubscribeMessage) {
+        unsubscribeMessage();
+      }
+      if (unsubscribeConnection) {
+        unsubscribeConnection();
+      }
+    };
+  }, []);
 
   const loadData = async ({ silent = false } = {}) => {
     try {

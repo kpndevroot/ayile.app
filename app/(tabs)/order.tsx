@@ -17,6 +17,7 @@ import { AuthService } from '@/services/authService';
 import { API_BASE_URL, API_ENDPOINTS } from '@/constants/api';
 import { authenticatedFetch } from '@/utils/api';
 import { DesignTokens } from '@/constants/design';
+import { websocketService } from '@/services/websocketService';
 
 /**
  * Order Status Tab
@@ -278,13 +279,99 @@ export default function OrderTab() {
     }, [])
   );
 
-  // Auto-refresh order status and history every 10 seconds
+  // WebSocket connection for real-time order updates
+  useEffect(() => {
+    let unsubscribeMessage: (() => void) | null = null;
+    let unsubscribeConnection: (() => void) | null = null;
+
+    const setupWebSocket = async () => {
+      try {
+        // Connect to WebSocket
+        await websocketService.connect();
+
+        // Subscribe to order updates if we have an active order
+        const currentOrderId = await StorageService.getOrderId();
+        if (currentOrderId) {
+          websocketService.subscribeToOrder(currentOrderId);
+        }
+
+        // Handle incoming messages
+        unsubscribeMessage = websocketService.onMessage((message) => {
+          if (message.type === 'order:updated' || message.type === 'order:created') {
+            const updatedOrder = message.data as Order;
+            
+            // Update current order if it matches
+            if (order && updatedOrder.id === order.id) {
+              setOrder(updatedOrder);
+            }
+            
+            // Update selected order if it matches
+            if (selectedOrder && updatedOrder.id === selectedOrder.id) {
+              setSelectedOrder(updatedOrder);
+            }
+
+            // Refresh order history to show updated status
+            if (userData?.id) {
+              fetchOrderHistory(userData.id);
+            }
+          }
+        });
+
+        // Handle connection state changes
+        unsubscribeConnection = websocketService.onConnectionStateChange((connected) => {
+          if (connected) {
+            console.log('[OrderTab] WebSocket connected');
+            // Resubscribe to order when reconnected
+            const resubscribe = async () => {
+              const currentOrderId = await StorageService.getOrderId();
+              if (currentOrderId) {
+                websocketService.subscribeToOrder(currentOrderId);
+              }
+            };
+            resubscribe();
+          } else {
+            console.log('[OrderTab] WebSocket disconnected');
+          }
+        });
+      } catch (error) {
+        console.error('[OrderTab] Error setting up WebSocket:', error);
+      }
+    };
+
+    setupWebSocket();
+
+    // Cleanup on unmount
+    return () => {
+      if (unsubscribeMessage) {
+        unsubscribeMessage();
+      }
+      if (unsubscribeConnection) {
+        unsubscribeConnection();
+      }
+      // Don't disconnect WebSocket here as it might be used by other screens
+      // websocketService.disconnect();
+    };
+  }, [order?.id, selectedOrder?.id, userData?.id]);
+
+  // Subscribe to order when it changes
+  useEffect(() => {
+    const subscribeToOrder = async () => {
+      const currentOrderId = await StorageService.getOrderId();
+      if (currentOrderId && websocketService.getConnectionState()) {
+        websocketService.subscribeToOrder(currentOrderId);
+      }
+    };
+
+    subscribeToOrder();
+  }, [order?.id]);
+
+  // Fallback: Auto-refresh order status and history every 30 seconds (less frequent since we have WebSocket)
   useEffect(() => {
     const refreshData = async () => {
       const currentUserData = await StorageService.getUserData();
       if (!currentUserData?.id) return;
 
-      // Refresh active order if exists
+      // Refresh active order if exists (as fallback)
       const currentOrderId = await StorageService.getOrderId();
       if (currentOrderId) {
         const updatedOrder = await fetchOrderDetails(currentOrderId);
@@ -307,11 +394,11 @@ export default function OrderTab() {
     // Initial refresh
     refreshData();
 
-    // Set up interval for auto-refresh
-    const interval = setInterval(refreshData, 10000); // Refresh every 10 seconds
+    // Set up interval for auto-refresh (less frequent with WebSocket)
+    const interval = setInterval(refreshData, 30000); // Refresh every 30 seconds
 
     return () => clearInterval(interval);
-  }, []); // Run once on mount, then refresh every 10 seconds
+  }, []); // Run once on mount, then refresh every 30 seconds
 
   if (loading) {
     return (
