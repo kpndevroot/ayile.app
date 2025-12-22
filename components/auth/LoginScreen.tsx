@@ -65,14 +65,14 @@ export function LoginScreen({ onLoginSuccess, onSwitchToSignup }: LoginScreenPro
   const [canResend, setCanResend] = useState(false);
   const [selectedCountry, setSelectedCountry] = useState<CountryCode>(COUNTRY_CODES[0]); // India as default
   const [showCountryPicker, setShowCountryPicker] = useState(false);
-  
+
   const otpInputRefs = useRef<(TextInput | null)[]>([]);
 
   // Format phone number as user types (supports different formats based on country)
   const formatPhoneNumber = (text: string, countryCode: string) => {
     // Remove all non-digits
     const cleaned = text.replace(/\D/g, '');
-    
+
     // India format: XXXX-XXXX-XX (10 digits)
     if (countryCode === '+91') {
       if (cleaned.length <= 4) {
@@ -141,7 +141,7 @@ export function LoginScreen({ onLoginSuccess, onSwitchToSignup }: LoginScreenPro
     // Format phone for API (remove dashes and add country code)
     const cleanedPhone = phone.replace(/\D/g, '');
     const formattedPhone = `${selectedCountry.dialCode}${cleanedPhone}`;
-    
+
     // Validate phone length (India: 10 digits, US/Canada: 10 digits, others: at least 7)
     const minLength = selectedCountry.dialCode === '+91' || selectedCountry.dialCode === '+1' ? 10 : 7;
     if (cleanedPhone.length < minLength) {
@@ -163,7 +163,7 @@ export function LoginScreen({ onLoginSuccess, onSwitchToSignup }: LoginScreenPro
     }
 
     const formattedPhone = `+1${phone.replace(/\D/g, '')}`;
-    
+
     if (formattedPhone.length !== 12) {
       Alert.alert('Invalid', 'Please enter a valid 10-digit phone number');
       return;
@@ -175,7 +175,7 @@ export function LoginScreen({ onLoginSuccess, onSwitchToSignup }: LoginScreenPro
   const handleOTPChange = (index: number, value: string) => {
     // Only allow single digit
     if (value.length > 1) return;
-    
+
     const newCode = [...otpCode];
     newCode[index] = value;
     setOtpCode(newCode);
@@ -199,7 +199,7 @@ export function LoginScreen({ onLoginSuccess, onSwitchToSignup }: LoginScreenPro
 
   const handleResendOTP = () => {
     if (!canResend) return;
-    
+
     // TODO: Call resend OTP API
     setResendTimer(59);
     setCanResend(false);
@@ -209,7 +209,7 @@ export function LoginScreen({ onLoginSuccess, onSwitchToSignup }: LoginScreenPro
 
   const handleVerifyOTP = async (code?: string) => {
     const finalCode = code || otpCode.join('');
-    
+
     if (finalCode.length !== 6) {
       Alert.alert('Invalid', 'Please enter the complete 6-digit code');
       return;
@@ -260,9 +260,9 @@ export function LoginScreen({ onLoginSuccess, onSwitchToSignup }: LoginScreenPro
       onLoginSuccess(user);
     } catch (error: any) {
       console.error('Error logging in:', error);
-      
+
       const errorMessage = error.message || 'Failed to login. Please try again.';
-      
+
       if (errorMessage.includes('Invalid') || errorMessage.includes('401') || errorMessage.includes('credentials')) {
         Alert.alert('Invalid Credentials', 'Invalid phone number or password. Please try again.');
       } else if (errorMessage.includes('400') || errorMessage.includes('input')) {
@@ -291,7 +291,7 @@ export function LoginScreen({ onLoginSuccess, onSwitchToSignup }: LoginScreenPro
 
   const formatPhoneForDisplay = (phoneNum: string, countryCode: string) => {
     const cleaned = phoneNum.replace(/\D/g, '');
-    
+
     // India format: +91 XXXX-XXXX-XX
     if (countryCode === '+91' && cleaned.length === 10) {
       return `${countryCode} ${cleaned.slice(0, 4)}-${cleaned.slice(4, 8)}-${cleaned.slice(8)}`;

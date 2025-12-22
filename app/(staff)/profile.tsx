@@ -52,9 +52,13 @@ export default function StaffProfileScreen() {
                     onPress: async () => {
                         setLoading(true);
                         try {
-                            await AuthService.logout();
+
                             // Clear storage explicitly just in case
                             await StorageService.clearAll();
+
+
+                            await AuthService.logout();
+
                             // Navigate to root which loads (tabs)/index.tsx -> LoginScreen
                             router.replace('/');
                         } catch (error) {

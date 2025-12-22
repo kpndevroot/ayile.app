@@ -45,14 +45,26 @@ export class AuthService {
   }
 
   static async signup(data: SignupData): Promise<User> {
-    const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.USERS.BASE}`, {
+    // Split name by space into firstName and lastName
+    const trimmedName = data.name.trim();
+    const nameParts = trimmedName.split(/\s+/).filter(part => part.length > 0);
+
+    // If only one name provided, use it as firstName and lastName
+    // If multiple names, first part is firstName, rest is lastName
+    const firstName = nameParts[0] || '';
+    const lastName = nameParts.length > 1
+      ? nameParts.slice(1).join(' ')
+      : firstName; // Use firstName as lastName if only one name provided
+
+    const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.AUTH.REGISTER}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         phone: data.phone.replace(/\s/g, ''),
-        name: data.name.trim(),
+        firstName: firstName,
+        lastName: lastName,
         password: data.password,
         role: data.role || 'CUSTOMER',
       }),
@@ -65,7 +77,7 @@ export class AuthService {
     }
 
     // Return the user data from the API response
-    // The API already splits name into firstName and lastName
+    // Name is split into firstName and lastName before sending to API
     return responseData.user;
   }
 
@@ -79,7 +91,7 @@ export class AuthService {
   static async logout(): Promise<void> {
     try {
       const token = await StorageService.getAuthToken();
-      
+
       // Call logout API endpoint
       await fetch(`${API_BASE_URL}${API_ENDPOINTS.AUTH.LOGOUT}`, {
         method: 'POST',

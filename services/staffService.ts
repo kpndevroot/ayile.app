@@ -10,6 +10,7 @@ export interface StaffOrder {
   itemsCount: number;
   timeAgo: string;
   statusColor: string;
+  paymentStatus?: string; // Payment status: 'COMPLETED', 'PAID', 'PENDING', etc.
   customer?: {
     name: string;
     phone: string;
@@ -253,6 +254,15 @@ export class StaffService {
           displayStatus = 'complete';
         }
 
+        // Determine payment status from order or payments
+        let paymentStatus = order.paymentStatus || 'PENDING';
+        if (order.payments && order.payments.length > 0) {
+          const completedPayment = order.payments.find((p: any) => p.status === 'COMPLETED');
+          if (completedPayment) {
+            paymentStatus = 'COMPLETED';
+          }
+        }
+
         return {
           id: order.id,
           orderNumber: order.orderNumber,
@@ -261,6 +271,7 @@ export class StaffService {
           itemsCount: order._count?.orderItems || order.orderItems?.length || 0,
           timeAgo,
           statusColor,
+          paymentStatus,
           customer: order.user ? {
             name: `${order.user.firstName} ${order.user.lastName}`,
             phone: order.user.phone || '',
@@ -325,6 +336,38 @@ export class StaffService {
     } catch (error) {
       console.error('Error updating order status:', error);
       throw error;
+    }
+  }
+
+  /**
+   * Update payment status (simple paid/not paid)
+   * Updates the order's paymentStatus field directly
+   * Default state is PENDING (not paid)
+   */
+  static async updatePaymentStatus(orderId: string, isPaid: boolean): Promise<void> {
+    try {
+      const paymentStatus = isPaid ? 'COMPLETED' : 'PENDING';
+      
+      const response = await authenticatedFetch(
+        `${API_BASE_URL}${API_ENDPOINTS.ORDERS.UPDATE_PAYMENT_STATUS(orderId)}`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            paymentStatus: paymentStatus,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to update payment status');
+      }
+    } catch (error: any) {
+      console.error('Error updating payment status:', error);
+      throw new Error(error.message || 'Failed to update payment status');
     }
   }
 

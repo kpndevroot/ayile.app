@@ -130,41 +130,6 @@ export default function OrderTab() {
     }
   };
 
-  const handleRefresh = async () => {
-    setRefreshing(true);
-
-    // Animate refresh icon rotation
-    const rotateAnimation = Animated.loop(
-      Animated.timing(refreshRotation, {
-        toValue: 1,
-        duration: 1000,
-        useNativeDriver: true,
-      }),
-      { iterations: -1 }
-    );
-    rotateAnimation.start();
-
-    try {
-      await loadData();
-    } finally {
-      // Stop rotation animation
-      rotateAnimation.stop();
-      Animated.timing(refreshRotation, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
-
-      setRefreshing(false);
-    }
-  };
-
-  // Rotation animation for refresh icon
-  const rotation = refreshRotation.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0deg', '360deg'],
-  });
-
   const getStatusColor = (status: OrderStatus): string => {
     switch (status) {
       case 'PENDING':
@@ -420,15 +385,6 @@ export default function OrderTab() {
         order={selectedOrder}
         restaurant={restaurant}
         onBack={() => setSelectedOrder(null)}
-        onRefresh={async () => {
-          if (userData?.id) {
-            await fetchOrderHistory(userData.id);
-            const updatedOrder = await fetchOrderDetails(selectedOrder.id);
-            if (updatedOrder) {
-              setSelectedOrder(updatedOrder);
-            }
-          }
-        }}
         onLogout={handleLogout}
         onDismiss={async () => setSelectedOrder(null)}
       />
@@ -442,7 +398,6 @@ export default function OrderTab() {
         order={order}
         restaurant={restaurant}
         onBack={handleBack}
-        onRefresh={handleRefresh}
         onLogout={handleLogout}
         onDismiss={async () => {
           await clearOrderData();
@@ -462,7 +417,6 @@ export default function OrderTab() {
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
-            onRefresh={handleRefresh}
             tintColor={DesignTokens.colors.orange[500]}
             colors={[DesignTokens.colors.orange[500]]}
             progressViewOffset={Platform.OS === 'android' ? 20 : 0}
@@ -479,39 +433,6 @@ export default function OrderTab() {
         )}
 
         <YStack gap="$4" padding="$4">
-          {/* Header Section */}
-          <YStack gap="$2" marginBottom="$2">
-            <XStack justifyContent="space-between" alignItems="center">
-              <Text fontSize="$9" fontWeight="bold" color="$brown9">
-                Orders
-              </Text>
-              <TouchableOpacity
-                onPress={handleRefresh}
-                disabled={refreshing}
-                style={styles.refreshButton}
-                activeOpacity={0.7}
-              >
-                {refreshing ? (
-                  <ActivityIndicator size="small" color="#F97316" />
-                ) : (
-                  <MaterialIcons name="refresh" size={24} color="#F97316" />
-                )}
-              </TouchableOpacity>
-            </XStack>
-            {order && (
-              <Text fontSize="$4" color="$lightBrown5">
-                You have an active order. View it above.
-              </Text>
-            )}
-            {!order && (
-              <Text fontSize="$4" color="$lightBrown5">
-                {orderHistory.length > 0
-                  ? `You have ${orderHistory.length} order${orderHistory.length !== 1 ? 's' : ''} in your history`
-                  : 'Your order history will appear here'}
-              </Text>
-            )}
-          </YStack>
-
           {/* Order History Section - Always show when no active order */}
           {!order && (
             <YStack gap="$3">

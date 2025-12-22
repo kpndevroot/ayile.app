@@ -1,5 +1,7 @@
 import React from 'react';
-import { YStack, XStack, Text, Button } from '@tamagui/core';
+import { Text } from '@tamagui/core';
+import { YStack, XStack } from '@tamagui/stacks';
+import { Button } from '@tamagui/button';
 import { Card } from '@/components/ui/Card';
 import { DesignTokens } from '@/constants/design';
 import { Phone, MapPin, Bike, Wallet, Send } from '@tamagui/lucide-icons';
@@ -77,7 +79,7 @@ export function OrderCard({
               alignItems="center"
               justifyContent="center"
             >
-              <Bike size={18} color={DesignTokens.colors.white} />
+              <Bike size={18} color="#FFFFFF" />
             </YStack>
             {isCOD && (
               <YStack
@@ -88,7 +90,7 @@ export function OrderCard({
                 alignItems="center"
                 justifyContent="center"
               >
-                <Wallet size={18} color={DesignTokens.colors.white} />
+                <Wallet size={18} color="#FFFFFF" />
               </YStack>
             )}
           </XStack>
@@ -221,13 +223,12 @@ export function OrderCard({
         {showDeliveryActions && onPickUp && (
           <Button
             onPress={onPickUp}
-            variant="primary"
-            fullWidth
             style={{
               backgroundColor: DesignTokens.colors.teal[500],
+              width: '100%',
             }}
           >
-            <Text color={DesignTokens.colors.white} fontWeight="600">
+            <Text color="#FFFFFF" fontWeight="600">
               Pick Up & Start Delivery
             </Text>
           </Button>

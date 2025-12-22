@@ -141,7 +141,7 @@ export class StorageService {
   static async addToLocalCart(menuItem: MenuItem, quantity: number = 1): Promise<LocalCartItem[]> {
     const cart = await this.getLocalCart();
     const existingIndex = cart.findIndex(item => item.menuItemId === menuItem.id);
-    
+
     if (existingIndex >= 0) {
       cart[existingIndex].quantity += quantity;
     } else {
@@ -151,7 +151,7 @@ export class StorageService {
         menuItem,
       });
     }
-    
+
     await this.setLocalCart(cart);
     return cart;
   }
@@ -159,7 +159,7 @@ export class StorageService {
   static async updateLocalCartItem(menuItemId: string, quantity: number): Promise<LocalCartItem[]> {
     const cart = await this.getLocalCart();
     const existingIndex = cart.findIndex(item => item.menuItemId === menuItemId);
-    
+
     if (existingIndex >= 0) {
       if (quantity <= 0) {
         cart.splice(existingIndex, 1);
@@ -167,7 +167,7 @@ export class StorageService {
         cart[existingIndex].quantity = quantity;
       }
     }
-    
+
     await this.setLocalCart(cart);
     return cart;
   }

@@ -197,6 +197,17 @@ export default function StaffDashboardScreen() {
     router.push(`/(staff)/order-detail?id=${orderId}`);
   };
 
+  const handleMarkAsPaid = async (orderId: string, isPaid: boolean) => {
+    try {
+      await StaffService.updatePaymentStatus(orderId, isPaid);
+      // Refresh data to show updated payment status
+      loadData({ silent: true });
+    } catch (error: any) {
+      console.error('Error updating payment status:', error);
+      throw error;
+    }
+  };
+
   const handleProfilePress = () => {
     router.push('/(staff)/profile');
   };
@@ -247,6 +258,7 @@ export default function StaffDashboardScreen() {
               onAccept={handleAcceptOrder}
               onReject={handleRejectOrder}
               onViewDetails={handleViewDetails}
+              onMarkAsPaid={handleMarkAsPaid}
             />
           </YStack>
         </ScrollView>

@@ -39,11 +39,22 @@ export default function HomeScreen() {
     checkUserStatus();
   }, []);
 
-  // Listen for QR scan trigger from bottom navigation
+  // Listen for QR scan trigger and logout trigger from bottom navigation
   useFocusEffect(
     React.useCallback(() => {
-      const checkQRTrigger = async () => {
+      const checkTriggers = async () => {
         try {
+          // Check for logout flag
+          const forceLogout = await AsyncStorage.getItem('@forks_force_logout');
+          if (forceLogout === 'true') {
+            // Clear the flag
+            await AsyncStorage.removeItem('@forks_force_logout');
+            // Re-check user status which will show login screen
+            await checkUserStatus();
+            return;
+          }
+
+          // Check for QR scan trigger
           const triggerQR = await AsyncStorage.getItem('@forks_trigger_qr_scan');
           if (triggerQR === 'true') {
             // Clear the flag
@@ -67,10 +78,10 @@ export default function HomeScreen() {
             }
           }
         } catch (error) {
-          console.error('Error checking QR trigger:', error);
+          console.error('Error checking triggers:', error);
         }
       };
-      checkQRTrigger();
+      checkTriggers();
     }, [])
   );
 

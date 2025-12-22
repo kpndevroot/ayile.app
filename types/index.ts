@@ -12,6 +12,10 @@ export interface User {
   lastName: string;
   role: UserRole;
   restaurantId?: string | null;
+  _count: {
+    orders: number;
+    payments: number
+  }
 }
 
 export interface Restaurant {

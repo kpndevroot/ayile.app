@@ -10,6 +10,7 @@ import { TopBar } from '@/components/ui/TopBar';
 import { Restaurant } from '@/types';
 import { StorageService } from '@/utils/storage';
 import { API_BASE_URL } from '@/constants/api';
+import { DesignTokens } from '@/constants/design';
 
 /**
  * Restaurant Details Tab
@@ -215,6 +216,7 @@ export default function RestaurantTab() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: DesignTokens.colors.beige[50],
   },
   scrollContent: {
     flexGrow: 1,

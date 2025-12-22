@@ -13,6 +13,7 @@ interface OrdersListProps {
   onAccept: (orderId: string) => void;
   onReject: (orderId: string) => void;
   onViewDetails: (orderId: string) => void;
+  onMarkAsPaid?: (orderId: string, isPaid: boolean) => Promise<void>;
 }
 
 /**
@@ -25,6 +26,7 @@ export function OrdersList({
   onAccept,
   onReject,
   onViewDetails,
+  onMarkAsPaid,
 }: OrdersListProps) {
   if (orders.length === 0) {
     return (
@@ -65,6 +67,7 @@ export function OrdersList({
           onAccept={onAccept}
           onReject={onReject}
           onViewDetails={onViewDetails}
+          onMarkAsPaid={onMarkAsPaid}
         />
       ))}
     </YStack>

@@ -136,7 +136,33 @@ export default function OrderDetailScreen() {
     total: `₹${parseFloat(order.totalAmount?.toString() || '0').toFixed(2)}`,
   };
 
-  const paymentMethod = order.paymentStatus === 'COMPLETED' ? 'Card (Paid)' : 'Cash on Delivery';
+  // Payment status: simple paid/not paid (default is not paid)
+  const isPaid = order.paymentStatus === 'COMPLETED' || order.paymentStatus === 'PAID';
+  const paymentStatusText = isPaid ? 'Paid' : 'Not Paid';
+
+  const handleTogglePaymentStatus = async () => {
+    const newIsPaid = !isPaid;
+    
+    Alert.alert(
+      newIsPaid ? 'Mark as Paid' : 'Mark as Not Paid',
+      `Are you sure you want to mark this order as ${newIsPaid ? 'Paid' : 'Not Paid'}?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Confirm',
+          onPress: async () => {
+            try {
+              await StaffService.updatePaymentStatus(orderId, newIsPaid);
+              await loadOrder();
+              Alert.alert('Success', `Payment status updated to ${newIsPaid ? 'Paid' : 'Not Paid'}`);
+            } catch (error: any) {
+              Alert.alert('Error', error.message || 'Failed to update payment status');
+            }
+          },
+        },
+      ]
+    );
+  };
 
   return (
     <YStack
@@ -417,18 +443,87 @@ export default function OrderDetailScreen() {
                   <Text fontSize={DesignTokens.typography.fontSize.xl} fontWeight="bold" color={DesignTokens.colors.orange[600]}>{pricing.total}</Text>
                 </XStack>
 
-                <XStack
-                  backgroundColor={DesignTokens.colors.beige[200]}
-                  padding="$2"
-                  borderRadius="$2"
-                  marginTop="$2"
-                  alignItems="center"
-                  justifyContent="center"
-                  space="$2"
-                >
-                  <CreditCard size={16} color={DesignTokens.colors.brown[700]} />
-                  <Text fontSize={DesignTokens.typography.fontSize.sm} color={DesignTokens.colors.brown[800]} fontWeight="600">{paymentMethod}</Text>
-                </XStack>
+                {/* Payment Status Section */}
+                <YStack marginTop="$3" space="$2">
+                  <Text 
+                    fontSize={DesignTokens.typography.fontSize.sm} 
+                    color={DesignTokens.colors.lightBrown[500]}
+                    fontWeight="500"
+                  >
+                    Payment Status
+                  </Text>
+                  <TouchableOpacity
+                    onPress={handleTogglePaymentStatus}
+                    activeOpacity={0.8}
+                  >
+                    <XStack
+                      backgroundColor={isPaid ? '#ECFDF5' : '#FFF7ED'}
+                      padding="$4"
+                      borderRadius="$3"
+                      alignItems="center"
+                      justifyContent="space-between"
+                      borderWidth={2}
+                      borderColor={isPaid ? DesignTokens.colors.semantic.success : DesignTokens.colors.orange[300]}
+                      style={{
+                        shadowColor: isPaid ? DesignTokens.colors.semantic.success : DesignTokens.colors.orange[500],
+                        shadowOffset: { width: 0, height: 2 },
+                        shadowOpacity: 0.1,
+                        shadowRadius: 4,
+                        elevation: 3,
+                      }}
+                    >
+                      <XStack alignItems="center" space="$3" flex={1}>
+                        <YStack
+                          width={48}
+                          height={48}
+                          borderRadius={24}
+                          backgroundColor={isPaid ? DesignTokens.colors.semantic.success : DesignTokens.colors.orange[100]}
+                          alignItems="center"
+                          justifyContent="center"
+                        >
+                          {isPaid ? (
+                            <Check size={24} color="#FFFFFF" strokeWidth={3} />
+                          ) : (
+                            <CreditCard size={24} color={DesignTokens.colors.orange[600]} />
+                          )}
+                        </YStack>
+                        <YStack flex={1} space="$1">
+                          <Text 
+                            fontSize={DesignTokens.typography.fontSize.md} 
+                            color={isPaid ? DesignTokens.colors.semantic.success : DesignTokens.colors.orange[700]} 
+                            fontWeight="700"
+                          >
+                            {paymentStatusText}
+                          </Text>
+                          <Text 
+                            fontSize={DesignTokens.typography.fontSize.xs} 
+                            color={isPaid ? DesignTokens.colors.semantic.success : DesignTokens.colors.orange[600]} 
+                            fontWeight="400"
+                          >
+                            {isPaid ? 'Payment received' : 'Tap to mark as paid'}
+                          </Text>
+                        </YStack>
+                      </XStack>
+                      <YStack
+                        backgroundColor={isPaid ? DesignTokens.colors.semantic.success : DesignTokens.colors.orange[500]}
+                        paddingHorizontal="$3"
+                        paddingVertical="$2"
+                        borderRadius="$2"
+                        minWidth={80}
+                        alignItems="center"
+                        justifyContent="center"
+                      >
+                        <Text 
+                          fontSize={DesignTokens.typography.fontSize.sm} 
+                          color="#FFFFFF" 
+                          fontWeight="700"
+                        >
+                          {isPaid ? 'PAID' : 'MARK AS PAID'}
+                        </Text>
+                      </YStack>
+                    </XStack>
+                  </TouchableOpacity>
+                </YStack>
               </YStack>
             </YStack>
           </YStack>
@@ -436,6 +531,8 @@ export default function OrderDetailScreen() {
       </ScrollView >
 
       {/* Action Buttons */}
+      {/* only show update status button if order is not delivered */}
+      {order.status !== 'DELIVERED' && (
       < YStack
         padding="$4"
         paddingBottom={insets.bottom + 16}
@@ -467,7 +564,7 @@ export default function OrderDetailScreen() {
           <Text color={DesignTokens.colors.semantic.error}>Cancel Order</Text>
         </Button>
       </YStack >
-
+      )}
       {/* Update Status Modal */}
       < UpdateOrderStatusModal
         visible={showStatusModal}

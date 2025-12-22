@@ -52,6 +52,7 @@ export function UpdateOrderStatusModal({
   const [estimatedTime, setEstimatedTime] = useState('');
 
   const handleUpdate = () => {
+    console.log('selectedStatus', selectedStatus);
     onUpdate(
       selectedStatus,
       estimatedTime ? parseInt(estimatedTime, 10) : undefined
@@ -222,7 +223,8 @@ export function UpdateOrderStatusModal({
             </YStack>
 
             {/* Action Buttons */}
-            <YStack space="$2">
+            {currentStatus !== 'DELIVERED' ? (
+              <YStack space="$2">
               <Button
                 onPress={handleUpdate}
                 variant="primary"
@@ -244,6 +246,8 @@ export function UpdateOrderStatusModal({
                 </Text>
               </TouchableOpacity>
             </YStack>
+            ) : null}
+            
           </YStack>
         </Card>
       </YStack>

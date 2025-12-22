@@ -1,21 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { ScrollView, StyleSheet, Alert, ActivityIndicator, TouchableOpacity, View, Image, Platform, RefreshControl, Animated } from 'react-native';
+import { ScrollView, StyleSheet, Alert, ActivityIndicator, TouchableOpacity, View, Image, Platform, RefreshControl, FlatList } from 'react-native';
 import { Text } from '@tamagui/core';
 import { YStack, XStack } from '@tamagui/stacks';
 import { ThemedView } from '@/components/themed-view';
-import { TopBar } from '@/components/ui/TopBar';
 import { Order, Restaurant, OrderStatus } from '@/types';
 import { StorageService } from '@/utils/storage';
-import { AuthService } from '@/services/authService';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { DesignTokens } from '@/constants/design';
 import { useRouter } from 'expo-router';
+import { API_BASE_URL, API_ENDPOINTS } from '@/constants/api';
+import { authenticatedFetch } from '@/utils/api';
+import { getStatusBadgeColor, getStatusLabel } from '@/utils/orderUtils';
 
 interface OrderStatusScreenProps {
   order: Order;
   restaurant: Restaurant;
   onBack: () => void;
-  onRefresh: () => Promise<void>;
   onLogout?: () => void;
   onDismiss: () => Promise<void>;
 }
@@ -36,32 +36,23 @@ export function OrderStatusScreen({
   order,
   restaurant,
   onBack,
-  onRefresh,
   onLogout,
   onDismiss
 }: OrderStatusScreenProps) {
   const router = useRouter();
-  const [refreshing, setRefreshing] = useState(false);
   const [currentOrder, setCurrentOrder] = useState<Order>(order);
   const [orderUserData, setOrderUserData] = useState<any>(null);
   const [showDetails, setShowDetails] = useState(false);
-  const [refreshRotation] = useState(new Animated.Value(0));
+  const [activeTab, setActiveTab] = useState<'current' | 'history'>('current');
+  const [orderHistory, setOrderHistory] = useState<Order[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+  const [refreshingHistory, setRefreshingHistory] = useState(false);
+  const [selectedHistoryOrder, setSelectedHistoryOrder] = useState<Order | null>(null);
 
   // Update current order when order prop changes
   useEffect(() => {
     setCurrentOrder(order);
   }, [order]);
-
-  // Auto-refresh order status every 10 seconds if order is not completed
-  useEffect(() => {
-    if (currentOrder && currentOrder.status !== 'DELIVERED' && currentOrder.status !== 'CANCELLED') {
-      const interval = setInterval(async () => {
-        await onRefresh();
-      }, 10000); // Refresh every 10 seconds
-
-      return () => clearInterval(interval);
-    }
-  }, [currentOrder?.status, onRefresh]);
 
   // Load user data for TopBar
   useEffect(() => {
@@ -78,82 +69,54 @@ export function OrderStatusScreen({
     loadUserData();
   }, []);
 
-  const handleRefresh = async () => {
-    setRefreshing(true);
+  // Fetch order history when history tab is active
+  useEffect(() => {
+    if (activeTab === 'history' && orderUserData?.id) {
+      fetchOrderHistory();
+    }
+  }, [activeTab, orderUserData?.id]);
 
-    // Animate refresh icon rotation
-    const rotateAnimation = Animated.loop(
-      Animated.timing(refreshRotation, {
-        toValue: 1,
-        duration: 1000,
-        useNativeDriver: true,
-      }),
-      { iterations: -1 }
-    );
-    rotateAnimation.start();
-
+  const fetchOrderHistory = async () => {
+    if (!orderUserData?.id) return;
+    
     try {
-      await onRefresh();
-    } finally {
-      // Stop rotation animation
-      rotateAnimation.stop();
-      Animated.timing(refreshRotation, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
+      setLoadingHistory(true);
+      const response = await authenticatedFetch(
+        `${API_BASE_URL}${API_ENDPOINTS.ORDERS.BASE}?userId=${orderUserData.id}&limit=50`
+      );
+      const data = await response.json();
 
-      setRefreshing(false);
+      if (response.ok && data.orders) {
+        // Filter out the current active order if it exists
+        const currentOrderId = await StorageService.getOrderId();
+        const filteredOrders = data.orders.filter(
+          (o: Order) => o.id !== currentOrderId
+        );
+        // Sort by date (newest first)
+        const sortedOrders = filteredOrders.sort((a: Order, b: Order) => {
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        });
+        setOrderHistory(sortedOrders);
+      }
+    } catch (error) {
+      console.error('Error fetching order history:', error);
+    } finally {
+      setLoadingHistory(false);
     }
   };
 
-  // Rotation animation for refresh icon
-  const rotation = refreshRotation.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0deg', '360deg'],
-  });
-
-  const handleLogout = async () => {
-    Alert.alert(
-      'Logout',
-      'Are you sure you want to logout? This will clear all your data.',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Logout',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              // Call logout API and clear storage
-              await AuthService.logout();
-
-              // Clear all AsyncStorage keys
-              await StorageService.clearAll();
-
-              // Call the onLogout callback if provided
-              onLogout?.();
-
-              // Navigate to index tab which will show login screen
-              router.replace('/');
-            } catch (error) {
-              console.error('Error logging out:', error);
-              // Even if there's an error, try to clear storage and navigate
-              try {
-                await StorageService.clearAll();
-                onLogout?.();
-                router.replace('/');
-              } catch (clearError) {
-                console.error('Error clearing storage:', clearError);
-                Alert.alert('Error', 'Failed to logout. Please try again.');
-              }
-            }
-          },
-        },
-      ]
-    );
+  // Refresh order history only (for pull-to-refresh)
+  const handleRefreshHistory = async () => {
+    if (!orderUserData?.id) return;
+    
+    setRefreshingHistory(true);
+    try {
+      await fetchOrderHistory();
+    } catch (error) {
+      console.error('Error refreshing order history:', error);
+    } finally {
+      setRefreshingHistory(false);
+    }
   };
 
   // Calculate estimated arrival time (15-20 minutes from order time)
@@ -214,96 +177,266 @@ export function OrderStatusScreen({
     });
   };
 
-  if (!currentOrder) {
+  const formatDateShort = (dateString: string): string => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffTime = now.getTime() - date.getTime();
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 0) {
+      return 'Today';
+    } else if (diffDays === 1) {
+      return 'Yesterday';
+    } else if (diffDays < 7) {
+      return date.toLocaleDateString('en-US', { weekday: 'short' });
+    } else {
+      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    }
+  };
+
+
+  const fetchOrderDetails = async (orderId: string): Promise<Order | null> => {
+    try {
+      const response = await authenticatedFetch(`${API_BASE_URL}${API_ENDPOINTS.ORDERS.BY_ID(orderId)}`);
+      const data = await response.json();
+
+      if (response.ok && data.order) {
+        return data.order;
+      }
+      return null;
+    } catch (error) {
+      console.error('Error fetching order details:', error);
+      return null;
+    }
+  };
+
+  const handleHistoryOrderPress = async (historyOrder: Order) => {
+    try {
+      const fullOrderDetails = await fetchOrderDetails(historyOrder.id);
+      if (fullOrderDetails) {
+        setSelectedHistoryOrder(fullOrderDetails);
+        setShowDetails(true);
+      }
+    } catch (error) {
+      console.error('Error loading order details:', error);
+      Alert.alert('Error', 'Failed to load order details');
+    }
+  };
+
+  const progressSteps = currentOrder ? getProgressSteps() : [];
+  const estimatedArrival = currentOrder ? getEstimatedArrival() : '';
+
+  const renderOrderHistoryItem = ({ item }: { item: Order }) => {
+    const statusColor = getStatusBadgeColor(item.status);
+    const restaurantName = item.restaurant?.name || restaurant?.name || 'Restaurant';
+
     return (
-      <ThemedView style={styles.container}>
-        <YStack flex={1} alignItems="center" justifyContent="center">
-          <ActivityIndicator size="large" color="#F97316" />
-          <Text fontSize={18} color={DesignTokens.colors.brown[900]} marginTop={16}>
-            Loading order details...
+      <TouchableOpacity
+        onPress={() => handleHistoryOrderPress(item)}
+        activeOpacity={0.7}
+        style={styles.historyItem}
+      >
+        <YStack
+          backgroundColor="white"
+          borderRadius={12}
+          padding={16}
+          gap={12}
+        >
+          <XStack justifyContent="space-between" alignItems="flex-start">
+            <YStack flex={1} gap={4}>
+              <Text fontSize={16} fontWeight="700" color={DesignTokens.colors.brown[900]}>
+                {restaurantName}
+              </Text>
+              <Text fontSize={12} color={DesignTokens.colors.lightBrown[500]}>
+                {formatDate(item.createdAt)}
+              </Text>
+            </YStack>
+            <View style={[styles.statusBadge, { backgroundColor: `${statusColor}15` }]}>
+              <Text fontSize={12} fontWeight="600" style={{ color: statusColor }}>
+                {getStatusLabel(item.status)}
+              </Text>
+            </View>
+          </XStack>
+
+          {item.orderItems && item.orderItems.length > 0 && (
+            <YStack gap={4} marginTop={4}>
+              {item.orderItems.slice(0, 2).map((orderItem) => (
+                <XStack key={orderItem.id} justifyContent="space-between">
+                  <Text fontSize={14} color={DesignTokens.colors.brown[900]} flex={1}>
+                    {orderItem.quantity}x {orderItem.menuItem?.name || 'Item'}
+                  </Text>
+                </XStack>
+              ))}
+              {item.orderItems.length > 2 && (
+                <Text fontSize={12} color={DesignTokens.colors.lightBrown[500]}>
+                  +{item.orderItems.length - 2} more items
+                </Text>
+              )}
+            </YStack>
+          )}
+
+          <XStack justifyContent="space-between" alignItems="center" marginTop={4} paddingTop={12} borderTopWidth={1} borderTopColor={DesignTokens.colors.beige[200]}>
+            <Text fontSize={12} color={DesignTokens.colors.lightBrown[500]}>
+              Order #{item.id.substring(0, 8).toUpperCase()}
+            </Text>
+            <Text fontSize={18} fontWeight="700" color={DesignTokens.colors.orange[500]}>
+              ₹{parseFloat((item.totalAmount || 0).toString()).toFixed(2)}
+            </Text>
+          </XStack>
+        </YStack>
+      </TouchableOpacity>
+    );
+  };
+
+  const renderOrderHistory = () => {
+    if (loadingHistory) {
+      return (
+        <YStack flex={1} alignItems="center" justifyContent="center" paddingTop={100}>
+          <ActivityIndicator size="large" color={DesignTokens.colors.orange[500]} />
+          <Text fontSize={16} color={DesignTokens.colors.brown[900]} marginTop={16}>
+            Loading order history...
           </Text>
         </YStack>
-      </ThemedView>
-    );
-  }
+      );
+    }
 
-  const progressSteps = getProgressSteps();
-  const estimatedArrival = getEstimatedArrival();
+    if (orderHistory.length === 0) {
+      return (
+        <YStack flex={1} alignItems="center" justifyContent="center" paddingTop={100} paddingHorizontal={20}>
+          <MaterialIcons name="history" size={64} color={DesignTokens.colors.beige[300]} />
+          <Text fontSize={20} fontWeight="600" color={DesignTokens.colors.brown[900]} marginTop={16} textAlign="center">
+            No Order History
+          </Text>
+          <Text fontSize={14} color={DesignTokens.colors.lightBrown[500]} marginTop={8} textAlign="center">
+            Your past orders will appear here
+          </Text>
+        </YStack>
+      );
+    }
 
-  return (
-    <ThemedView style={styles.container}>
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
+    return (
+      <FlatList
+        data={orderHistory}
+        renderItem={renderOrderHistoryItem}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={styles.historyList}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
-            refreshing={refreshing}
-            onRefresh={handleRefresh}
+            refreshing={refreshingHistory}
+            onRefresh={handleRefreshHistory}
             tintColor={DesignTokens.colors.orange[500]}
             colors={[DesignTokens.colors.orange[500]]}
-            progressViewOffset={Platform.OS === 'android' ? 20 : 0}
           />
         }
+      />
+    );
+  };
+
+  return (
+    <ThemedView style={styles.container}>
+      {/* Header */}
+      <XStack
+        alignItems="center"
+        justifyContent="space-between"
+        paddingHorizontal={20}
+        paddingTop={orderUserData?.role === 'CUSTOMER' ? 12 : 60}
+        paddingBottom={16}
+        backgroundColor="white"
       >
-        {/* TopBar for Customer users */}
-        {orderUserData?.role === 'CUSTOMER' && (
-          <TopBar
-            userName={`${orderUserData.firstName} ${orderUserData.lastName}`}
-            userRole={orderUserData.role}
-            onLogout={handleLogout}
-            onScanAnotherQR={onBack}
-          />
-        )}
+        <TouchableOpacity onPress={onBack} style={styles.backButton}>
+          <MaterialIcons name="arrow-back" size={24} color="#000000" />
+        </TouchableOpacity>
+        <Text fontSize={20} fontWeight="700" color={DesignTokens.colors.brown[900]}>
+          {activeTab === 'current' ? 'Order Status' : 'Order History'}
+        </Text>
+        <View style={styles.backButton} />
+      </XStack>
 
-        {/* Header */}
-        <XStack
-          alignItems="center"
-          justifyContent="space-between"
-          paddingHorizontal={20}
-          paddingTop={orderUserData?.role === 'CUSTOMER' ? 12 : 60}
-          paddingBottom={16}
-          backgroundColor="white"
+      {/* Tabs */}
+      <XStack
+        backgroundColor="white"
+        paddingHorizontal={20}
+        paddingVertical={12}
+        gap={8}
+        borderBottomWidth={1}
+        borderBottomColor={DesignTokens.colors.beige[200]}
+      >
+        <TouchableOpacity
+          onPress={() => setActiveTab('current')}
+          style={[styles.tab, activeTab === 'current' && styles.tabActive]}
+          activeOpacity={0.7}
         >
-          <TouchableOpacity onPress={onBack} style={styles.backButton}>
-            <MaterialIcons name="arrow-back" size={24} color="#000000" />
-          </TouchableOpacity>
           <Text
-            fontSize={20}
-            fontWeight="700"
-            color={DesignTokens.colors.brown[900]}
-            style={styles.headerTitle}
+            fontSize={16}
+            fontWeight={activeTab === 'current' ? '700' : '500'}
+            color={activeTab === 'current' ? DesignTokens.colors.orange[500] : DesignTokens.colors.lightBrown[500]}
           >
-            Order Status
+            Current Order
           </Text>
-          <TouchableOpacity
-            onPress={handleRefresh}
-            disabled={refreshing}
-            style={styles.refreshButton}
-            activeOpacity={0.7}
-          >
-            {refreshing ? (
-              <ActivityIndicator size="small" color={DesignTokens.colors.orange[500]} />
-            ) : (
-              <MaterialIcons name="refresh" size={24} color={DesignTokens.colors.orange[500]} />
-            )}
-          </TouchableOpacity>
-        </XStack>
-
-        <YStack
-          paddingHorizontal={20}
-          paddingTop={20}
-          paddingBottom={100}
-          backgroundColor={DesignTokens.colors.background.light}
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={() => setActiveTab('history')}
+          style={[styles.tab, activeTab === 'history' && styles.tabActive]}
+          activeOpacity={0.7}
         >
-          {/* Status Card with Chef Image */}
-          <YStack
-            backgroundColor={currentOrder.status === 'DELIVERED' ? '#DCFCE7' : DesignTokens.colors.beige[200]}
-            borderRadius={20}
-            padding={24}
-            alignItems="center"
-            marginBottom={24}
-            style={styles.statusCard}
+          <Text
+            fontSize={16}
+            fontWeight={activeTab === 'history' ? '700' : '500'}
+            color={activeTab === 'history' ? DesignTokens.colors.orange[500] : DesignTokens.colors.lightBrown[500]}
           >
+            Order History
+          </Text>
+        </TouchableOpacity>
+      </XStack>
+
+      {activeTab === 'current' ? (
+        !currentOrder ? (
+          <YStack flex={1} alignItems="center" justifyContent="center" paddingTop={100} paddingHorizontal={20}>
+            <MaterialIcons name="shopping-bag" size={64} color={DesignTokens.colors.beige[300]} />
+            <Text fontSize={20} fontWeight="600" color={DesignTokens.colors.brown[900]} marginTop={16} textAlign="center">
+              No Active Order
+            </Text>
+            <Text fontSize={14} color={DesignTokens.colors.lightBrown[500]} marginTop={8} textAlign="center">
+              You don't have an active order right now
+            </Text>
+            <TouchableOpacity
+              style={[styles.orderMoreButton, { marginTop: 24, maxWidth: 200 }]}
+              activeOpacity={0.8}
+              onPress={() => router.push('/(tabs)' as any)}
+            >
+              <MaterialIcons name="shopping-cart" size={20} color="#FFFFFF" />
+              <Text
+                fontSize={16}
+                fontWeight="600"
+                color="#FFFFFF"
+                marginLeft={8}
+              >
+                Browse Menu
+              </Text>
+            </TouchableOpacity>
+          </YStack>
+        ) : (
+          <ScrollView
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+          >
+
+          <YStack
+            paddingHorizontal={20}
+            paddingTop={20}
+            paddingBottom={100}
+            backgroundColor={DesignTokens.colors.background.light}
+          >
+            {/* Status Card with Chef Image */}
+            <YStack
+              backgroundColor={currentOrder.status === 'DELIVERED' ? '#DCFCE7' : DesignTokens.colors.beige[200]}
+              borderRadius={20}
+              padding={24}
+              alignItems="center"
+              marginBottom={24}
+              style={styles.statusCard}
+            >
             {/* Chef/Status Image Placeholder */}
             <View style={styles.chefImageContainer}>
               <View style={[
@@ -455,7 +588,7 @@ export function OrderStatusScreen({
                   Restaurant:
                 </Text>
                 <Text fontSize={14} fontWeight="600" color={DesignTokens.colors.brown[900]}>
-                  {restaurant.name}
+                  {restaurant?.name || 'Restaurant'}
                 </Text>
               </XStack>
               {currentOrder.table && (
@@ -517,93 +650,173 @@ export function OrderStatusScreen({
           )}
         </YStack>
       </ScrollView>
+        )
+      ) : (
+        <View style={styles.historyContainer}>
+          {renderOrderHistory()}
+          
+          {/* Order Details Modal for History */}
+          {selectedHistoryOrder && showDetails && (
+            <View style={styles.modalOverlay}>
+              <View style={styles.modalContent}>
+                <XStack justifyContent="space-between" alignItems="center" marginBottom={20}>
+                  <Text fontSize={20} fontWeight="700" color={DesignTokens.colors.brown[900]}>
+                    Order Details
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() => {
+                      setShowDetails(false);
+                      setSelectedHistoryOrder(null);
+                    }}
+                  >
+                    <MaterialIcons name="close" size={24} color={DesignTokens.colors.brown[900]} />
+                  </TouchableOpacity>
+                </XStack>
 
-      {/* Bottom Action Buttons */}
-      <XStack
-        position="absolute"
-        bottom={0}
-        left={0}
-        right={0}
-        paddingHorizontal={20}
-        paddingVertical={16}
-        backgroundColor="white"
-        gap={12}
-        style={styles.bottomButtons}
-      >
-        {/* Need Help Button or Dismiss */}
-        {currentOrder.status === 'DELIVERED' ? (
-          <TouchableOpacity
-            style={[styles.helpButton, { backgroundColor: DesignTokens.colors.neutral.gray200 }]}
-            activeOpacity={0.8}
-            onPress={() => {
-              Alert.alert(
-                'Dismiss Order',
-                'Are you sure you want to dismiss this order?',
-                [
-                  { text: 'Cancel', style: 'cancel' },
-                  {
-                    text: 'Dismiss',
-                    onPress: async () => {
-                      await onDismiss();
-                    }
-                  }
-                ]
-              );
-            }}
-          >
-            <MaterialIcons name="close" size={20} color={DesignTokens.colors.neutral.gray700} />
-            <Text
-              fontSize={16}
-              fontWeight="600"
-              color={DesignTokens.colors.neutral.gray700}
-              marginLeft={8}
-            >
-              Dismiss
-            </Text>
-          </TouchableOpacity>
-        ) : (
-          <TouchableOpacity
-            style={styles.helpButton}
-            activeOpacity={0.8}
-            onPress={() => {
-              Alert.alert('Need Help?', 'Contact restaurant support for assistance with your order.');
-            }}
-          >
-            <MaterialIcons name="help-outline" size={20} color={DesignTokens.colors.orange[500]} />
-            <Text
-              fontSize={16}
-              fontWeight="600"
-              color={DesignTokens.colors.orange[500]}
-              marginLeft={8}
-            >
-              Need Help?
-            </Text>
-          </TouchableOpacity>
-        )}
+                <ScrollView showsVerticalScrollIndicator={false}>
+                  <YStack gap={16}>
+                    <XStack justifyContent="space-between">
+                      <Text fontSize={14} color={DesignTokens.colors.lightBrown[500]}>
+                        Order ID:
+                      </Text>
+                      <Text fontSize={14} fontWeight="600" color={DesignTokens.colors.brown[900]}>
+                        {selectedHistoryOrder.id.substring(0, 8).toUpperCase()}
+                      </Text>
+                    </XStack>
+                    <XStack justifyContent="space-between">
+                      <Text fontSize={14} color={DesignTokens.colors.lightBrown[500]}>
+                        Restaurant:
+                      </Text>
+                      <Text fontSize={14} fontWeight="600" color={DesignTokens.colors.brown[900]}>
+                        {selectedHistoryOrder.restaurant?.name || restaurant?.name || 'Restaurant'}
+                      </Text>
+                    </XStack>
+                    {selectedHistoryOrder.table && (
+                      <XStack justifyContent="space-between">
+                        <Text fontSize={14} color={DesignTokens.colors.lightBrown[500]}>
+                          Table:
+                        </Text>
+                        <Text fontSize={14} fontWeight="600" color={DesignTokens.colors.brown[900]}>
+                          {selectedHistoryOrder.table.tableNumber || selectedHistoryOrder.table.uniqueId}
+                        </Text>
+                      </XStack>
+                    )}
+                    <XStack justifyContent="space-between">
+                      <Text fontSize={14} color={DesignTokens.colors.lightBrown[500]}>
+                        Status:
+                      </Text>
+                      <View style={[styles.statusBadge, { backgroundColor: `${getStatusBadgeColor(selectedHistoryOrder.status)}15` }]}>
+                        <Text fontSize={12} fontWeight="600" style={{ color: getStatusBadgeColor(selectedHistoryOrder.status) }}>
+                          {getStatusLabel(selectedHistoryOrder.status)}
+                        </Text>
+                      </View>
+                    </XStack>
+                    <XStack justifyContent="space-between">
+                      <Text fontSize={14} color={DesignTokens.colors.lightBrown[500]}>
+                        Placed:
+                      </Text>
+                      <Text fontSize={14} fontWeight="600" color={DesignTokens.colors.brown[900]}>
+                        {formatDate(selectedHistoryOrder.createdAt)}
+                      </Text>
+                    </XStack>
+                    <XStack justifyContent="space-between" marginTop={8}>
+                      <Text fontSize={18} fontWeight="700" color={DesignTokens.colors.brown[900]}>
+                        Total:
+                      </Text>
+                      <Text fontSize={20} fontWeight="700" color={DesignTokens.colors.orange[500]}>
+                        ₹{parseFloat((selectedHistoryOrder.totalAmount || 0).toString()).toFixed(2)}
+                      </Text>
+                    </XStack>
 
-        {/* Order More Button */}
-        <TouchableOpacity
-          style={styles.orderMoreButton}
-          activeOpacity={0.8}
-          onPress={async () => {
-            // If delivered, we clear the current order so they can start fresh
-            if (currentOrder.status === 'DELIVERED') {
-              await onDismiss();
-            }
-            router.push('/(tabs)' as any);
-          }}
+                    {selectedHistoryOrder.orderItems && selectedHistoryOrder.orderItems.length > 0 && (
+                      <YStack marginTop={16} gap={12}>
+                        <Text fontSize={16} fontWeight="700" color={DesignTokens.colors.brown[900]} marginBottom={8}>
+                          Order Items ({selectedHistoryOrder.orderItems.length})
+                        </Text>
+                        {selectedHistoryOrder.orderItems.map((item) => (
+                          <XStack
+                            key={item.id}
+                            justifyContent="space-between"
+                            paddingVertical={8}
+                            borderBottomWidth={1}
+                            borderBottomColor={DesignTokens.colors.beige[200]}
+                          >
+                            <YStack flex={1}>
+                              <Text fontSize={14} fontWeight="600" color={DesignTokens.colors.brown[900]}>
+                                {item.menuItem?.name || 'Menu Item'}
+                              </Text>
+                              <Text fontSize={12} color={DesignTokens.colors.lightBrown[500]} marginTop={4}>
+                                Qty: {item.quantity} × ₹{parseFloat((item.basePrice || item.price || 0).toString()).toFixed(2)}
+                              </Text>
+                            </YStack>
+                            <Text fontSize={14} fontWeight="700" color={DesignTokens.colors.brown[900]}>
+                              ₹{parseFloat((item.totalPrice || (parseFloat((item.basePrice || item.price || 0).toString()) * item.quantity)).toString()).toFixed(2)}
+                            </Text>
+                          </XStack>
+                        ))}
+                      </YStack>
+                    )}
+                  </YStack>
+                </ScrollView>
+              </View>
+            </View>
+          )}
+        </View>
+      )}
+
+      {/* Bottom Action Buttons - Only show for current order tab */}
+      {activeTab === 'current' && (
+        <XStack
+          position="absolute"
+          bottom={0}
+          left={0}
+          right={0}
+          paddingHorizontal={20}
+          paddingVertical={16}
+          backgroundColor="white"
+          gap={12}
+          style={styles.bottomButtons}
         >
-          <MaterialIcons name="shopping-cart" size={20} color="#FFFFFF" />
-          <Text
-            fontSize={16}
-            fontWeight="600"
-            color="#FFFFFF"
-            marginLeft={8}
+          {/* Need Help Button */}
+        
+            <TouchableOpacity
+              style={styles.helpButton}
+              activeOpacity={0.8}
+              onPress={() => {
+                Alert.alert('Need Help?', 'Contact restaurant support for assistance with your order.');
+              }}
+            >
+              <MaterialIcons name="help-outline" size={20} color={DesignTokens.colors.orange[500]} />
+              <Text
+                fontSize={16}
+                fontWeight="600"
+                color={DesignTokens.colors.orange[500]}
+                marginLeft={8}
+              >
+                Need Help?
+              </Text>
+            </TouchableOpacity>
+
+          {/* Order More Button */}
+          <TouchableOpacity
+            style={styles.orderMoreButton}
+            activeOpacity={0.8}
+            onPress={() => {
+              router.push('/(tabs)' as any);
+            }}
           >
-            Order More
-          </Text>
-        </TouchableOpacity>
-      </XStack>
+            <MaterialIcons name="shopping-cart" size={20} color="#FFFFFF" />
+            <Text
+              fontSize={16}
+              fontWeight="600"
+              color="#FFFFFF"
+              marginLeft={8}
+            >
+              Order More
+            </Text>
+          </TouchableOpacity>
+        </XStack>
+      )}
     </ThemedView >
   );
 }
@@ -740,5 +953,51 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     ...DesignTokens.shadows.md,
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tabActive: {
+    backgroundColor: DesignTokens.colors.beige[200],
+  },
+  historyContainer: {
+    flex: 1,
+    backgroundColor: DesignTokens.colors.background.light,
+  },
+  historyList: {
+    padding: 20,
+    paddingBottom: 100,
+  },
+  historyItem: {
+    marginBottom: 12,
+  },
+  statusBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  modalOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  modalContent: {
+    backgroundColor: 'white',
+    borderRadius: 16,
+    padding: 24,
+    width: '90%',
+    maxHeight: '80%',
+    ...DesignTokens.shadows.lg,
   },
 });

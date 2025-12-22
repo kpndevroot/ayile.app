@@ -19,6 +19,7 @@ import { StorageService, LocalCartItem } from '@/utils/storage';
 import { API_BASE_URL, API_ENDPOINTS } from '@/constants/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
+import { TopBar } from '@/components/ui/TopBar';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -305,21 +306,13 @@ export function HomePage({
           paddingHorizontal={20}
           paddingTop={Platform.OS === 'ios' ? 60 : 20}
           paddingBottom={16}
-          backgroundColor="#FBF9F6"
         >
-          <XStack
-            alignItems="center"
-            justifyContent="space-between"
-            marginBottom={16}
-          >
-            <Text fontSize={20} fontWeight="700" color="#1A0F08">
-              Dine-in: Table {tableNumber}
-            </Text>
-            <TouchableOpacity onPress={() => router.push('/(tabs)/profile')}>
-              <MaterialIcons name="account-circle" size={28} color="#1A0F08" />
-            </TouchableOpacity>
-          </XStack>
-
+          <TopBar
+            userName={userData ? `${userData.firstName} ${userData.lastName}` : 'Customer'}
+            userRole={userData?.role}
+            onScanAnotherQR={onScanQR}
+            onLogout={onLogout}
+          />
           {/* Search Bar */}
           <XStack
             backgroundColor="white"

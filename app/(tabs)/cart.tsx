@@ -9,7 +9,6 @@ import { ThemedView } from '@/components/themed-view';
 import { StorageService, LocalCartItem } from '@/utils/storage';
 import { API_BASE_URL, API_ENDPOINTS } from '@/constants/api';
 import { useRouter } from 'expo-router';
-import { MenuItem } from '@/types';
 
 export default function CartScreen() {
   const router = useRouter();
@@ -282,7 +281,7 @@ export default function CartScreen() {
             </Text>
             <TouchableOpacity
               style={styles.primaryButton}
-              onPress={() => router.push('/(tabs)/restaurant')}
+              onPress={() => router.replace('/(tabs)' as any)}
               activeOpacity={0.8}
             >
               <Text fontSize={18} fontWeight="600" color="white">
