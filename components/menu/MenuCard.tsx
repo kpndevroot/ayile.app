@@ -130,9 +130,7 @@ export function MenuCard({
           style={styles.imageContainer}
         >
           <FoodImage
-            menuItemName={item.name}
-            category={item.category}
-            existingImageUrl={item.imageUrl}
+            imageUrl={item.imageUrl}
             width={width - 16} // Account for 8px margin on each side
             height={imageHeight}
             borderRadius={16}

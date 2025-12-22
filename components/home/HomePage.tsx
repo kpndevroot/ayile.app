@@ -365,9 +365,7 @@ export function HomePage({
                   <View key={item.id} style={styles.bestsellerCard}>
                     <View style={styles.bestsellerImageContainer}>
                       <FoodImage
-                        menuItemName={item.name}
-                        category={item.category?.name}
-                        existingImageUrl={item.imageUrl}
+                        imageUrl={item.imageUrl}
                         width={SCREEN_WIDTH * 0.7}
                         height={180}
                         borderRadius={16}
@@ -481,9 +479,7 @@ export function HomePage({
                   <View key={item.id} style={styles.mainsCard}>
                     <View style={styles.mainsImageContainer}>
                       <FoodImage
-                        menuItemName={item.name}
-                        category={item.category?.name}
-                        existingImageUrl={item.imageUrl}
+                        imageUrl={item.imageUrl}
                         width={100}
                         height={100}
                         borderRadius={12}

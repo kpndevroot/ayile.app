@@ -1,64 +1,48 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, ActivityIndicator, Image, ImageStyle, ViewStyle } from 'react-native';
-import { YStack } from '@tamagui/stacks';
+import { View, StyleSheet, Image, ImageStyle, ViewStyle } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { useFoodImage } from '@/hooks/useFoodImage';
 import { DesignTokens } from '@/constants/design';
 
 interface FoodImageProps {
-  menuItemName: string;
-  category?: string;
-  existingImageUrl?: string;
+  imageUrl?: string | null;
   width?: number | string;
   height?: number | string;
   borderRadius?: number;
-  style?: ViewStyle | ImageStyle;
+  style?: ImageStyle;
   resizeMode?: 'cover' | 'contain' | 'stretch' | 'repeat' | 'center';
 }
 
 /**
  * FoodImage Component
- * Fetches and displays food images from Unsplash with loading, error, and placeholder states
+ * Displays food images from server with placeholder fallback
  */
 export function FoodImage({
-  menuItemName,
-  category,
-  existingImageUrl,
+  imageUrl,
   width = '100%',
   height = 160,
   borderRadius = 0,
   style,
   resizeMode = 'cover',
 }: FoodImageProps) {
-  const { imageUrl, isLoading, error } = useFoodImage(menuItemName, category, existingImageUrl);
   const [imageError, setImageError] = useState(false);
 
   const containerStyle: ViewStyle = {
-    width,
-    height,
+    width: width as any,
+    height: height as any,
     borderRadius,
     overflow: 'hidden',
     backgroundColor: DesignTokens.colors.beige[200],
-    ...style,
+    ...(style as any),
   };
 
-  // Loading state
-  if (isLoading) {
+  // Show placeholder if no image URL or image failed to load
+  if (!imageUrl || imageError) {
     return (
       <View style={[containerStyle, styles.placeholderContainer]}>
-        <ActivityIndicator size="small" color={DesignTokens.colors.orange[500]} />
-      </View>
-    );
-  }
-
-  // Error state or no image
-  if (error || !imageUrl || imageError) {
-    return (
-      <View style={[containerStyle, styles.placeholderContainer]}>
-        <MaterialIcons 
-          name="restaurant" 
-          size={48} 
-          color={DesignTokens.colors.lightBrown[500]} 
+        <MaterialIcons
+          name="restaurant"
+          size={48}
+          color={DesignTokens.colors.lightBrown[500]}
         />
       </View>
     );
@@ -70,16 +54,15 @@ export function FoodImage({
       source={{ uri: imageUrl }}
       style={[
         {
-          width: typeof width === 'string' ? width : width,
-          height: typeof height === 'string' ? height : height,
+          width,
+          height,
           borderRadius,
-        },
+        } as ImageStyle,
         style,
       ]}
       resizeMode={resizeMode}
       onError={() => setImageError(true)}
       onLoadStart={() => setImageError(false)}
-      onLoadEnd={() => setImageError(false)}
     />
   );
 }
@@ -91,4 +74,3 @@ const styles = StyleSheet.create({
     backgroundColor: DesignTokens.colors.beige[200],
   },
 });
-
