@@ -1,23 +1,7 @@
 # Forks TODO
 
-- [ ] **1. Scan Another Restaurant QR Code**
 
-- **Priority**: Low
-- **Type**: Enhancement
-- **Status**: Mostly Working
-
-**Current state**: This feature already works. Users can trigger a new QR scan from the tab bar center button or bottom navigation. The flow (`app/(tabs)/index.tsx:58-79, 220-240`) clears current restaurant data, table info, order ID, and local cart, then reopens the QR scanner.
-
-**What may need improvement**:
-- `Forks/app/(tabs)/index.tsx:220-240` — When switching restaurants with items in the cart, the cart is silently cleared. Add a confirmation dialog: "You have X items in your cart. Switching restaurants will clear your cart. Continue?"
-- `Forks/components/restaurant/QRScanner.tsx` — Currently functional. Supports 3 QR URL formats via `Forks/utils/api.ts:43-61`.
-
-**Files to modify**:
-- `Forks/app/(tabs)/index.tsx` — Add `Alert.alert()` confirmation before clearing cart at line ~236 when `localCart.length > 0`.
-
----
-
-- [ ] **2. Notification for New Orders in Staff Dashboard**
+- [x] **1. Notification for New Orders in Staff Dashboard**
 
 - **Priority**: High
 - **Type**: Feature
@@ -40,7 +24,7 @@
 
 ---
 
-- [ ] **3. Notification When Order Ready for Delivery**
+- [x] **2. Notification When Order Ready for Delivery**
 
 - **Priority**: High
 - **Type**: Feature
@@ -60,7 +44,7 @@
 
 ---
 
-- [ ] **4. Animation While Order Is Being Prepared**
+- [ ] **3. Animation While Order Is Being Prepared**
 
 - **Priority**: Medium
 - **Type**: UI Enhancement
@@ -83,7 +67,7 @@
 
 ---
 
-- [ ] **5. Animation While Order Is Being Delivered**
+- [ ] **4. Animation While Order Is Being Delivered**
 
 - **Priority**: Medium
 - **Type**: UI Enhancement
@@ -101,7 +85,7 @@
 
 ---
 
-- [ ] **6. Animation While Order Is Completed**
+- [ ] **5. Animation While Order Is Completed**
 
 - **Priority**: Medium
 - **Type**: UI Enhancement
@@ -119,7 +103,7 @@
 
 ---
 
-- [ ] **7. Add Menu Item — Complete Staff & Admin UI**
+- [ ] **6. Add Menu Item — Complete Staff & Admin UI**
 
 - **Priority**: Medium
 - **Type**: Feature Enhancement
@@ -142,7 +126,7 @@
 
 ---
 
-- [ ] **8. Migrate Order Update Socket to SSE (Server-Sent Events)**
+- [ ] **7. Migrate Order Update Socket to SSE (Server-Sent Events)**
 
 - **Priority**: Low
 - **Type**: Architecture Change

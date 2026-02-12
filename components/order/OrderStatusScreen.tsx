@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { ScrollView, StyleSheet, Alert, ActivityIndicator, TouchableOpacity, View, Image, Platform, RefreshControl, FlatList } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { ScrollView, StyleSheet, Alert, ActivityIndicator, TouchableOpacity, View, Image, Platform, RefreshControl, FlatList, Animated } from 'react-native';
 import { Text } from '@tamagui/core';
 import { YStack, XStack } from '@tamagui/stacks';
 import { ThemedView } from '@/components/themed-view';
@@ -49,10 +49,55 @@ export function OrderStatusScreen({
   const [refreshingHistory, setRefreshingHistory] = useState(false);
   const [selectedHistoryOrder, setSelectedHistoryOrder] = useState<Order | null>(null);
 
+  // Animation for READY status celebration
+  const readyPulseAnim = useRef(new Animated.Value(1)).current;
+  const readyGlowAnim = useRef(new Animated.Value(0)).current;
+  const prevStatusRef = useRef<string | null>(null);
+
   // Update current order when order prop changes
   useEffect(() => {
     setCurrentOrder(order);
   }, [order]);
+
+  // Detect transition to READY and trigger celebration
+  useEffect(() => {
+    const prevStatus = prevStatusRef.current;
+    const newStatus = currentOrder.status;
+    prevStatusRef.current = newStatus;
+
+    if (newStatus === 'READY' && prevStatus && prevStatus !== 'READY') {
+      // Pulse animation on the Ready step circle
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(readyPulseAnim, {
+            toValue: 1.2,
+            duration: 600,
+            useNativeDriver: true,
+          }),
+          Animated.timing(readyPulseAnim, {
+            toValue: 1,
+            duration: 600,
+            useNativeDriver: true,
+          }),
+        ]),
+        { iterations: 3 }
+      ).start();
+
+      // Glow background flash
+      Animated.sequence([
+        Animated.timing(readyGlowAnim, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: false,
+        }),
+        Animated.timing(readyGlowAnim, {
+          toValue: 0,
+          duration: 1200,
+          useNativeDriver: false,
+        }),
+      ]).start();
+    }
+  }, [currentOrder.status]);
 
   // Load user data for TopBar
   useEffect(() => {
@@ -429,22 +474,40 @@ export function OrderStatusScreen({
             backgroundColor={DesignTokens.colors.background.light}
           >
             {/* Status Card with Chef Image */}
-            <YStack
-              backgroundColor={currentOrder.status === 'DELIVERED' ? '#DCFCE7' : DesignTokens.colors.beige[200]}
-              borderRadius={20}
-              padding={24}
-              alignItems="center"
-              marginBottom={24}
-              style={styles.statusCard}
+            <Animated.View
+              style={[
+                {
+                  backgroundColor: currentOrder.status === 'DELIVERED'
+                    ? '#DCFCE7'
+                    : currentOrder.status === 'READY'
+                      ? readyGlowAnim.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: [DesignTokens.colors.beige[200], '#DCFCE7'],
+                        })
+                      : DesignTokens.colors.beige[200],
+                  borderRadius: 20,
+                  padding: 24,
+                  alignItems: 'center' as const,
+                  marginBottom: 24,
+                },
+                styles.statusCard,
+              ]}
             >
             {/* Chef/Status Image Placeholder */}
             <View style={styles.chefImageContainer}>
               <View style={[
                 styles.chefImageCircle,
-                currentOrder.status === 'DELIVERED' && { backgroundColor: DesignTokens.colors.semantic.success }
+                currentOrder.status === 'DELIVERED' && { backgroundColor: DesignTokens.colors.semantic.success },
+                currentOrder.status === 'READY' && { backgroundColor: DesignTokens.colors.semantic.success },
               ]}>
                 <MaterialIcons
-                  name={currentOrder.status === 'DELIVERED' ? "check-circle" : "restaurant"}
+                  name={
+                    currentOrder.status === 'DELIVERED'
+                      ? "check-circle"
+                      : currentOrder.status === 'READY'
+                        ? "notifications-active"
+                        : "restaurant"
+                  }
                   size={60}
                   color="#FFFFFF"
                 />
@@ -462,7 +525,9 @@ export function OrderStatusScreen({
             >
               {currentOrder.status === 'DELIVERED'
                 ? 'Your order has been delivered!'
-                : 'Our chefs are working on your order!'}
+                : currentOrder.status === 'READY'
+                  ? 'Your order is ready for pickup!'
+                  : 'Our chefs are working on your order!'}
             </Text>
 
             {/* Estimated Arrival Label */}
@@ -486,7 +551,7 @@ export function OrderStatusScreen({
             >
               {estimatedArrival}
             </Text>
-          </YStack>
+          </Animated.View>
 
           {/* Progress Tracker */}
           <YStack marginBottom={16}>
@@ -497,17 +562,22 @@ export function OrderStatusScreen({
                 const nextStep = !isLast ? progressSteps[index + 1] : null;
                 const isNextActive = nextStep?.isActive || false;
                 const lineActive = isActive && isNextActive;
+                const isReadyStep = step.id === 'ready';
+                const isReadyPulsing = isReadyStep && currentOrder.status === 'READY';
 
                 return (
                   <View key={step.id} style={styles.progressItemContainer}>
                     <View style={styles.progressStep}>
-                      {/* Step Circle */}
-                      <View
+                      {/* Step Circle — animated for Ready step */}
+                      <Animated.View
                         style={[
                           styles.progressCircle,
                           isActive
-                            ? styles.progressCircleActive
-                            : styles.progressCircleInactive
+                            ? (isReadyPulsing
+                                ? [styles.progressCircleActive, { backgroundColor: DesignTokens.colors.semantic.success }]
+                                : styles.progressCircleActive)
+                            : styles.progressCircleInactive,
+                          isReadyPulsing && { transform: [{ scale: readyPulseAnim }] },
                         ]}
                       >
                         <MaterialIcons
@@ -515,13 +585,19 @@ export function OrderStatusScreen({
                           size={20}
                           color={isActive ? '#FFFFFF' : DesignTokens.colors.lightBrown[500]}
                         />
-                      </View>
+                      </Animated.View>
 
                       {/* Step Label */}
                       <Text
                         fontSize={12}
-                        fontWeight="500"
-                        color={isActive ? DesignTokens.colors.orange[500] : DesignTokens.colors.lightBrown[500]}
+                        fontWeight={isReadyPulsing ? '700' : '500'}
+                        color={
+                          isReadyPulsing
+                            ? DesignTokens.colors.semantic.success
+                            : isActive
+                              ? DesignTokens.colors.orange[500]
+                              : DesignTokens.colors.lightBrown[500]
+                        }
                         marginTop={8}
                         textAlign="center"
                       >

@@ -11,6 +11,7 @@ import { MetricsCards, DashboardMetrics } from '@/components/staff/MetricsCards'
 import { TabNavigation, TabType } from '@/components/staff/TabNavigation';
 import { OrdersList } from '@/components/staff/OrdersList';
 import { websocketService } from '@/services/websocketService';
+import { useNotification } from '@/contexts/NotificationContext';
 
 /**
  * Staff Dashboard Screen
@@ -19,6 +20,7 @@ import { websocketService } from '@/services/websocketService';
 export default function StaffDashboardScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { showNotification } = useNotification();
   const [activeTab, setActiveTab] = useState<TabType>('pending');
   // Initial loading only for first render
   const [initialLoading, setInitialLoading] = useState(true);
@@ -32,6 +34,7 @@ export default function StaffDashboardScreen() {
   });
   const [orders, setOrders] = useState<StaffOrder[]>([]);
   const [restaurantName, setRestaurantName] = useState('Restaurant');
+  const [pendingPulse, setPendingPulse] = useState(0);
 
   // Track if data has been loaded at least once
   const isLoaded = useRef(false);
@@ -62,8 +65,19 @@ export default function StaffDashboardScreen() {
 
         // Handle incoming messages
         unsubscribeMessage = websocketService.onMessage((message) => {
-          if (message.type === 'order:created' || message.type === 'order:updated') {
-            // Reload data to get updated orders and metrics
+          if (message.type === 'order:created') {
+            const orderData = message.data;
+            const orderId = orderData?.orderNumber || orderData?.id?.substring(0, 8).toUpperCase() || '';
+            const table = orderData?.table?.tableNumber || orderData?.table?.uniqueId || '';
+            showNotification({
+              type: 'info',
+              title: `New Order${orderId ? ` #${orderId}` : ''}`,
+              message: table ? `From Table ${table}` : 'A new order has arrived!',
+              duration: 5000,
+            });
+            setPendingPulse(prev => prev + 1);
+            loadData({ silent: true });
+          } else if (message.type === 'order:updated') {
             loadData({ silent: true });
           }
         });
@@ -242,7 +256,7 @@ export default function StaffDashboardScreen() {
         >
           <YStack padding="$4" space="$4">
             {/* Metrics Cards */}
-            <MetricsCards metrics={metrics} />
+            <MetricsCards metrics={metrics} pendingPulse={pendingPulse} />
 
             {/* Tab Navigation */}
             <TabNavigation

@@ -19,6 +19,7 @@ import { authenticatedFetch } from '@/utils/api';
 import { DesignTokens } from '@/constants/design';
 import { websocketService } from '@/services/websocketService';
 import { useAuth } from '@/contexts/AuthContext';
+import { useNotification } from '@/contexts/NotificationContext';
 
 /**
  * Order Status Tab
@@ -27,6 +28,7 @@ import { useAuth } from '@/contexts/AuthContext';
 export default function OrderTab() {
   const router = useRouter();
   const { isAuthenticated, requireAuth } = useAuth();
+  const { showNotification } = useNotification();
   const [order, setOrder] = useState<Order | null>(null);
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
   const [userData, setUserData] = useState<any>(null);
@@ -271,12 +273,40 @@ export default function OrderTab() {
         unsubscribeMessage = websocketService.onMessage((message) => {
           if (message.type === 'order:updated' || message.type === 'order:created') {
             const updatedOrder = message.data as Order;
-            
+
+            // Notify customer when order is READY
+            if (updatedOrder.status === 'READY') {
+              const isCurrentOrder = order && updatedOrder.id === order.id;
+              const isSelectedOrder = selectedOrder && updatedOrder.id === selectedOrder.id;
+              if (isCurrentOrder || isSelectedOrder) {
+                showNotification({
+                  type: 'success',
+                  title: 'Your order is ready!',
+                  message: 'Head to the counter to pick up your order.',
+                  duration: 6000,
+                });
+              }
+            }
+
+            // Notify customer when order is DELIVERED
+            if (updatedOrder.status === 'DELIVERED') {
+              const isCurrentOrder = order && updatedOrder.id === order.id;
+              const isSelectedOrder = selectedOrder && updatedOrder.id === selectedOrder.id;
+              if (isCurrentOrder || isSelectedOrder) {
+                showNotification({
+                  type: 'success',
+                  title: 'Order delivered!',
+                  message: 'Enjoy your meal!',
+                  duration: 5000,
+                });
+              }
+            }
+
             // Update current order if it matches
             if (order && updatedOrder.id === order.id) {
               setOrder(updatedOrder);
             }
-            
+
             // Update selected order if it matches
             if (selectedOrder && updatedOrder.id === selectedOrder.id) {
               setSelectedOrder(updatedOrder);

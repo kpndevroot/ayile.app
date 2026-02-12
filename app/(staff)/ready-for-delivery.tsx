@@ -6,6 +6,8 @@ import { DesignTokens } from '@/constants/design';
 import { OrderCard } from '@/components/staff';
 import { Map, ArrowUpDown, Gauge, Wallet } from '@tamagui/lucide-icons';
 import { StaffService } from '@/services/staffService';
+import { websocketService } from '@/services/websocketService';
+import { useNotification } from '@/contexts/NotificationContext';
 
 type TabType = 'ready' | 'out-for-delivery';
 
@@ -15,6 +17,7 @@ type TabType = 'ready' | 'out-for-delivery';
  */
 export default function ReadyForDeliveryScreen() {
   const insets = useSafeAreaInsets();
+  const { showNotification } = useNotification();
   const [activeTab, setActiveTab] = useState<TabType>('ready');
   const [loading, setLoading] = useState(true);
   const [readyOrders, setReadyOrders] = useState<any[]>([]);
@@ -23,6 +26,46 @@ export default function ReadyForDeliveryScreen() {
   useEffect(() => {
     loadOrders();
   }, [activeTab]);
+
+  // WebSocket: listen for order updates and notify when orders become READY
+  useEffect(() => {
+    let unsubscribe: (() => void) | null = null;
+
+    const setup = async () => {
+      try {
+        await websocketService.connect();
+        const restaurantId = await StaffService.getRestaurantId();
+        if (restaurantId) {
+          websocketService.subscribeToRestaurant(restaurantId);
+        }
+
+        unsubscribe = websocketService.onMessage((message) => {
+          if (message.type === 'order:updated') {
+            const orderData = message.data;
+            if (orderData?.status === 'READY') {
+              const orderId = orderData.orderNumber || orderData.id?.substring(0, 8).toUpperCase() || '';
+              const table = orderData.table?.tableNumber || '';
+              showNotification({
+                type: 'success',
+                title: `Order Ready${orderId ? ` #${orderId}` : ''}`,
+                message: table ? `Table ${table} — ready for delivery` : 'An order is ready for delivery!',
+                duration: 5000,
+              });
+            }
+            // Refresh orders list on any update
+            loadOrders();
+          } else if (message.type === 'order:created') {
+            loadOrders();
+          }
+        });
+      } catch (error) {
+        console.error('[ReadyForDelivery] WebSocket error:', error);
+      }
+    };
+
+    setup();
+    return () => { unsubscribe?.(); };
+  }, []);
 
   const loadOrders = async () => {
     try {
