@@ -140,9 +140,12 @@ export class StorageService {
     await AsyncStorage.removeItem(STORAGE_KEYS.LOCAL_CART);
   }
 
-  static async addToLocalCart(menuItem: MenuItem, quantity: number = 1): Promise<LocalCartItem[]> {
+  static async addToLocalCart(menuItem: MenuItem, quantity: number = 1, quantityOptionId?: string, quantityLabel?: string): Promise<LocalCartItem[]> {
     const cart = await this.getLocalCart();
-    const existingIndex = cart.findIndex(item => item.menuItemId === menuItem.id);
+    // Use composite key (menuItemId + quantityOptionId) so "Quarter Biryani" and "Full Biryani" are separate entries
+    const existingIndex = cart.findIndex(item =>
+      item.menuItemId === menuItem.id && item.quantityOptionId === quantityOptionId
+    );
 
     if (existingIndex >= 0) {
       cart[existingIndex].quantity += quantity;
@@ -151,6 +154,8 @@ export class StorageService {
         menuItemId: menuItem.id,
         quantity,
         menuItem,
+        quantityOptionId,
+        quantityLabel,
       });
     }
 
@@ -158,9 +163,11 @@ export class StorageService {
     return cart;
   }
 
-  static async updateLocalCartItem(menuItemId: string, quantity: number): Promise<LocalCartItem[]> {
+  static async updateLocalCartItem(menuItemId: string, quantity: number, quantityOptionId?: string): Promise<LocalCartItem[]> {
     const cart = await this.getLocalCart();
-    const existingIndex = cart.findIndex(item => item.menuItemId === menuItemId);
+    const existingIndex = cart.findIndex(item =>
+      item.menuItemId === menuItemId && item.quantityOptionId === quantityOptionId
+    );
 
     if (existingIndex >= 0) {
       if (quantity <= 0) {
@@ -174,9 +181,11 @@ export class StorageService {
     return cart;
   }
 
-  static async removeFromLocalCart(menuItemId: string): Promise<LocalCartItem[]> {
+  static async removeFromLocalCart(menuItemId: string, quantityOptionId?: string): Promise<LocalCartItem[]> {
     const cart = await this.getLocalCart();
-    const filtered = cart.filter(item => item.menuItemId !== menuItemId);
+    const filtered = cart.filter(item =>
+      !(item.menuItemId === menuItemId && item.quantityOptionId === quantityOptionId)
+    );
     await this.setLocalCart(filtered);
     return filtered;
   }

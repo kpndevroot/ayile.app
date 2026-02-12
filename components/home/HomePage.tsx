@@ -178,8 +178,13 @@ export function HomePage({
 
       };
 
-      // Add to cart using StorageService directly with the quantity
-      await StorageService.addToLocalCart(cartItem, quantity);
+      // Add to cart using StorageService directly with the quantity and selected option
+      await StorageService.addToLocalCart(
+        cartItem,
+        quantity,
+        selectedQuantityOption?.id,
+        selectedQuantityOption?.displayLabel
+      );
 
       // Trigger cart refresh
       await AsyncStorage.setItem('@forks_refresh_cart', 'true');
@@ -241,21 +246,14 @@ export function HomePage({
 
   const handleUpdateQuantity = async (item: any, newQuantity: number) => {
     try {
-      const menuItem: MenuItem = {
-        id: item.id,
-        name: item.name,
-        description: item.description,
-        category: item.category?.name || 'Mains',
-        price: item.quantityOptions?.[0]?.price || item.basePrice || '0',
-        imageUrl: item.imageUrl,
-        isAvailable: item.isAvailable,
-        restaurantId: item.restaurantId,
-      };
+      // Find the existing cart entry to get its quantityOptionId
+      const existingCartItem = localCart.find(ci => ci.menuItemId === item.id);
+      const quantityOptionId = existingCartItem?.quantityOptionId;
 
       if (newQuantity === 0) {
-        await StorageService.removeFromLocalCart(item.id);
+        await StorageService.removeFromLocalCart(item.id, quantityOptionId);
       } else {
-        await StorageService.updateLocalCartItem(item.id, newQuantity);
+        await StorageService.updateLocalCartItem(item.id, newQuantity, quantityOptionId);
       }
 
       await AsyncStorage.setItem('@forks_refresh_cart', 'true');

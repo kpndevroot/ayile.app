@@ -78,7 +78,7 @@ export default function CartScreen() {
     }
 
     try {
-      await StorageService.updateLocalCartItem(cartItem.menuItemId, newQuantity);
+      await StorageService.updateLocalCartItem(cartItem.menuItemId, newQuantity, cartItem.quantityOptionId);
       await loadCartData();
       // Trigger cart refresh in CustomTabBar
       await AsyncStorage.setItem('@forks_refresh_cart', 'true');
@@ -102,7 +102,7 @@ export default function CartScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              await StorageService.removeFromLocalCart(cartItem.menuItemId);
+              await StorageService.removeFromLocalCart(cartItem.menuItemId, cartItem.quantityOptionId);
               await loadCartData();
               // Trigger cart refresh in CustomTabBar
               await AsyncStorage.setItem('@forks_refresh_cart', 'true');
@@ -132,6 +132,7 @@ export default function CartScreen() {
         orderItems: localCart.map(item => ({
           menuItemId: item.menuItemId,
           quantity: item.quantity,
+          quantityOptionId: item.quantityOptionId,
         })),
       };
 
@@ -336,7 +337,7 @@ export default function CartScreen() {
 
               return (
                 <XStack
-                  key={cartItem.menuItemId}
+                  key={`${cartItem.menuItemId}-${cartItem.quantityOptionId || 'default'}`}
                   backgroundColor="white"
                   borderRadius={12}
                   padding={16}
@@ -350,6 +351,7 @@ export default function CartScreen() {
                       color="$brown9"
                     >
                       {cartItem.menuItem?.name || 'Item'}
+                      {cartItem.quantityLabel ? ` (${cartItem.quantityLabel})` : ''}
                     </Text>
                     <Text
                       fontSize={14}
