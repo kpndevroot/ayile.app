@@ -54,19 +54,53 @@ export function OrderStatusScreen({
   const readyGlowAnim = useRef(new Animated.Value(0)).current;
   const prevStatusRef = useRef<string | null>(null);
 
+  // Animations for PREPARING state (Task 3)
+  const preparingPulseAnim = useRef(new Animated.Value(1)).current;
+  const chefBreathAnim = useRef(new Animated.Value(1)).current;
+  const chefRotateAnim = useRef(new Animated.Value(0)).current;
+  const progressLineFill = useRef(new Animated.Value(0)).current;
+  const shimmerAnim = useRef(new Animated.Value(0)).current;
+  const preparingAnimRef = useRef<Animated.CompositeAnimation | null>(null);
+
+  // Animations for READY/Delivery state (Task 4)
+  const deliveryBounceAnim = useRef(new Animated.Value(0)).current;
+  const readyToServedLineFill = useRef(new Animated.Value(0)).current;
+  const deliveryAnimRef = useRef<Animated.CompositeAnimation | null>(null);
+
+  // Animations for DELIVERED/Completion state (Task 5)
+  const checkmarkBounceAnim = useRef(new Animated.Value(1)).current;
+  const cascadeAnims = useRef([
+    new Animated.Value(0),
+    new Animated.Value(0),
+    new Animated.Value(0),
+    new Animated.Value(0),
+  ]).current;
+  const overlayOpacity = useRef(new Animated.Value(0)).current;
+  const overlayScale = useRef(new Animated.Value(0.5)).current;
+  const confettiParticles = useRef(
+    Array.from({ length: 20 }, () => ({
+      translateY: new Animated.Value(0),
+      translateX: new Animated.Value(0),
+      rotate: new Animated.Value(0),
+      opacity: new Animated.Value(1),
+    }))
+  ).current;
+  const [confettiVisible, setConfettiVisible] = useState(false);
+  const [overlayVisible, setOverlayVisible] = useState(false);
+
   // Update current order when order prop changes
   useEffect(() => {
     setCurrentOrder(order);
   }, [order]);
 
-  // Detect transition to READY and trigger celebration
+  // Detect status transitions and trigger celebrations
   useEffect(() => {
     const prevStatus = prevStatusRef.current;
     const newStatus = currentOrder.status;
     prevStatusRef.current = newStatus;
 
+    // READY transition — pulse and glow
     if (newStatus === 'READY' && prevStatus && prevStatus !== 'READY') {
-      // Pulse animation on the Ready step circle
       Animated.loop(
         Animated.sequence([
           Animated.timing(readyPulseAnim, {
@@ -83,7 +117,6 @@ export function OrderStatusScreen({
         { iterations: 3 }
       ).start();
 
-      // Glow background flash
       Animated.sequence([
         Animated.timing(readyGlowAnim, {
           toValue: 1,
@@ -97,7 +130,270 @@ export function OrderStatusScreen({
         }),
       ]).start();
     }
+
+    // DELIVERED transition — celebration (Task 5)
+    if (newStatus === 'DELIVERED' && prevStatus && prevStatus !== 'DELIVERED') {
+      setConfettiVisible(true);
+      setOverlayVisible(true);
+
+      // Checkmark bounce-in
+      checkmarkBounceAnim.setValue(0);
+      Animated.spring(checkmarkBounceAnim, {
+        toValue: 1,
+        friction: 4,
+        tension: 60,
+        useNativeDriver: true,
+      }).start();
+
+      // Cascade fill — stagger each step circle green
+      cascadeAnims.forEach(a => a.setValue(0));
+      Animated.stagger(200,
+        cascadeAnims.map(anim =>
+          Animated.timing(anim, {
+            toValue: 1,
+            duration: 400,
+            useNativeDriver: false,
+          })
+        )
+      ).start();
+
+      // "Order Complete!" overlay
+      overlayOpacity.setValue(0);
+      overlayScale.setValue(0.5);
+      Animated.sequence([
+        Animated.parallel([
+          Animated.timing(overlayOpacity, {
+            toValue: 1,
+            duration: 400,
+            useNativeDriver: true,
+          }),
+          Animated.spring(overlayScale, {
+            toValue: 1,
+            friction: 6,
+            tension: 80,
+            useNativeDriver: true,
+          }),
+        ]),
+        Animated.delay(1500),
+        Animated.timing(overlayOpacity, {
+          toValue: 0,
+          duration: 500,
+          useNativeDriver: true,
+        }),
+      ]).start(() => {
+        setOverlayVisible(false);
+      });
+
+      // Confetti particles
+      confettiParticles.forEach((particle) => {
+        particle.translateY.setValue(0);
+        particle.translateX.setValue(0);
+        particle.rotate.setValue(0);
+        particle.opacity.setValue(1);
+        const randomX = (Math.random() - 0.5) * 300;
+        const randomDelay = Math.random() * 500;
+        const randomDuration = 2000 + Math.random() * 1000;
+
+        Animated.sequence([
+          Animated.delay(randomDelay),
+          Animated.parallel([
+            Animated.timing(particle.translateY, {
+              toValue: 600,
+              duration: randomDuration,
+              useNativeDriver: true,
+            }),
+            Animated.timing(particle.translateX, {
+              toValue: randomX,
+              duration: randomDuration,
+              useNativeDriver: true,
+            }),
+            Animated.timing(particle.rotate, {
+              toValue: Math.random() * 10 - 5,
+              duration: randomDuration,
+              useNativeDriver: true,
+            }),
+            Animated.sequence([
+              Animated.delay(randomDuration * 0.6),
+              Animated.timing(particle.opacity, {
+                toValue: 0,
+                duration: randomDuration * 0.4,
+                useNativeDriver: true,
+              }),
+            ]),
+          ]),
+        ]).start();
+      });
+
+      setTimeout(() => {
+        setConfettiVisible(false);
+      }, 3500);
+    }
   }, [currentOrder.status]);
+
+  // Start/stop PREPARING animations based on order status
+  useEffect(() => {
+    if (currentOrder.status === 'PREPARING') {
+      // 1. Pulsing breathing on Preparing step circle
+      const pulse = Animated.loop(
+        Animated.sequence([
+          Animated.timing(preparingPulseAnim, {
+            toValue: 1.18,
+            duration: 800,
+            useNativeDriver: true,
+          }),
+          Animated.timing(preparingPulseAnim, {
+            toValue: 1,
+            duration: 800,
+            useNativeDriver: true,
+          }),
+        ])
+      );
+
+      // 2. Chef circle breathing + subtle wobble
+      const chefBreath = Animated.loop(
+        Animated.sequence([
+          Animated.timing(chefBreathAnim, {
+            toValue: 1.06,
+            duration: 1200,
+            useNativeDriver: true,
+          }),
+          Animated.timing(chefBreathAnim, {
+            toValue: 1,
+            duration: 1200,
+            useNativeDriver: true,
+          }),
+        ])
+      );
+      const chefWobble = Animated.loop(
+        Animated.sequence([
+          Animated.timing(chefRotateAnim, {
+            toValue: 1,
+            duration: 1800,
+            useNativeDriver: true,
+          }),
+          Animated.timing(chefRotateAnim, {
+            toValue: -1,
+            duration: 1800,
+            useNativeDriver: true,
+          }),
+          Animated.timing(chefRotateAnim, {
+            toValue: 0,
+            duration: 900,
+            useNativeDriver: true,
+          }),
+        ])
+      );
+
+      // 3. Progress line fill animation (plays once over 2s)
+      progressLineFill.setValue(0);
+      const lineFill = Animated.timing(progressLineFill, {
+        toValue: 1,
+        duration: 2000,
+        useNativeDriver: false,
+      });
+
+      // 4. Shimmer on estimated time
+      const shimmer = Animated.loop(
+        Animated.sequence([
+          Animated.timing(shimmerAnim, {
+            toValue: 1,
+            duration: 1500,
+            useNativeDriver: true,
+          }),
+          Animated.timing(shimmerAnim, {
+            toValue: 0,
+            duration: 1500,
+            useNativeDriver: true,
+          }),
+        ])
+      );
+
+      const combined = Animated.parallel([pulse, chefBreath, chefWobble, lineFill, shimmer]);
+      preparingAnimRef.current = combined;
+      combined.start();
+    } else {
+      // Stop and reset all preparing animations
+      if (preparingAnimRef.current) {
+        preparingAnimRef.current.stop();
+        preparingAnimRef.current = null;
+      }
+      preparingPulseAnim.setValue(1);
+      chefBreathAnim.setValue(1);
+      chefRotateAnim.setValue(0);
+      shimmerAnim.setValue(0);
+      // Keep progress line filled for completed steps
+      if (currentOrder.status === 'READY' || currentOrder.status === 'DELIVERED') {
+        progressLineFill.setValue(1);
+      } else {
+        progressLineFill.setValue(0);
+      }
+    }
+
+    return () => {
+      if (preparingAnimRef.current) {
+        preparingAnimRef.current.stop();
+      }
+    };
+  }, [currentOrder.status]);
+
+  // Start/stop READY/Delivery animations (Task 4)
+  useEffect(() => {
+    if (currentOrder.status === 'READY') {
+      // Bouncing icon on Ready step
+      const bounce = Animated.loop(
+        Animated.sequence([
+          Animated.timing(deliveryBounceAnim, {
+            toValue: -10,
+            duration: 600,
+            useNativeDriver: true,
+          }),
+          Animated.timing(deliveryBounceAnim, {
+            toValue: 0,
+            duration: 600,
+            useNativeDriver: true,
+          }),
+        ])
+      );
+
+      // Progress line fill: Ready → Served
+      readyToServedLineFill.setValue(0);
+      const lineFill = Animated.timing(readyToServedLineFill, {
+        toValue: 1,
+        duration: 2500,
+        useNativeDriver: false,
+      });
+
+      const combined = Animated.parallel([bounce, lineFill]);
+      deliveryAnimRef.current = combined;
+      combined.start();
+    } else {
+      if (deliveryAnimRef.current) {
+        deliveryAnimRef.current.stop();
+        deliveryAnimRef.current = null;
+      }
+      deliveryBounceAnim.setValue(0);
+      if (currentOrder.status === 'DELIVERED') {
+        readyToServedLineFill.setValue(1);
+      } else {
+        readyToServedLineFill.setValue(0);
+      }
+    }
+
+    return () => {
+      if (deliveryAnimRef.current) {
+        deliveryAnimRef.current.stop();
+      }
+    };
+  }, [currentOrder.status]);
+
+  // Initialize animations for page load with existing status (Task 5)
+  useEffect(() => {
+    if (currentOrder.status === 'DELIVERED') {
+      cascadeAnims.forEach(a => a.setValue(1));
+      checkmarkBounceAnim.setValue(1);
+      readyToServedLineFill.setValue(1);
+    }
+  }, []);
 
   // Load user data for TopBar
   useEffect(() => {
@@ -123,7 +419,7 @@ export function OrderStatusScreen({
 
   const fetchOrderHistory = async () => {
     if (!orderUserData?.id) return;
-    
+
     try {
       setLoadingHistory(true);
       const response = await authenticatedFetch(
@@ -153,7 +449,7 @@ export function OrderStatusScreen({
   // Refresh order history only (for pull-to-refresh)
   const handleRefreshHistory = async () => {
     if (!orderUserData?.id) return;
-    
+
     setRefreshingHistory(true);
     try {
       await fetchOrderHistory();
@@ -467,270 +763,330 @@ export function OrderStatusScreen({
             showsVerticalScrollIndicator={false}
           >
 
-          <YStack
-            paddingHorizontal={20}
-            paddingTop={20}
-            paddingBottom={100}
-            backgroundColor={DesignTokens.colors.background.light}
-          >
-            {/* Status Card with Chef Image */}
-            <Animated.View
-              style={[
-                {
-                  backgroundColor: currentOrder.status === 'DELIVERED'
-                    ? '#DCFCE7'
-                    : currentOrder.status === 'READY'
-                      ? readyGlowAnim.interpolate({
+            <YStack
+              paddingHorizontal={20}
+              paddingTop={20}
+              paddingBottom={100}
+              backgroundColor={DesignTokens.colors.background.light}
+            >
+              {/* Status Card with Chef Image */}
+              <Animated.View
+                style={[
+                  {
+                    backgroundColor: currentOrder.status === 'DELIVERED'
+                      ? '#DCFCE7'
+                      : currentOrder.status === 'READY'
+                        ? readyGlowAnim.interpolate({
                           inputRange: [0, 1],
                           outputRange: [DesignTokens.colors.beige[200], '#DCFCE7'],
                         })
-                      : DesignTokens.colors.beige[200],
-                  borderRadius: 20,
-                  padding: 24,
-                  alignItems: 'center' as const,
-                  marginBottom: 24,
-                },
-                styles.statusCard,
-              ]}
-            >
-            {/* Chef/Status Image Placeholder */}
-            <View style={styles.chefImageContainer}>
-              <View style={[
-                styles.chefImageCircle,
-                currentOrder.status === 'DELIVERED' && { backgroundColor: DesignTokens.colors.semantic.success },
-                currentOrder.status === 'READY' && { backgroundColor: DesignTokens.colors.semantic.success },
-              ]}>
+                        : DesignTokens.colors.beige[200],
+                    borderRadius: 20,
+                    padding: 24,
+                    alignItems: 'center' as const,
+                    marginBottom: 24,
+                  },
+                  styles.statusCard,
+                ]}
+              >
+                {/* Chef/Status Image — animated breathing when PREPARING */}
+                <View style={styles.chefImageContainer}>
+                  <Animated.View style={[
+                    styles.chefImageCircle,
+                    currentOrder.status === 'DELIVERED' && {
+                      backgroundColor: DesignTokens.colors.semantic.success,
+                      transform: [{ scale: checkmarkBounceAnim }],
+                    },
+                    currentOrder.status === 'READY' && { backgroundColor: DesignTokens.colors.semantic.success },
+                    currentOrder.status === 'PREPARING' && {
+                      transform: [
+                        { scale: chefBreathAnim },
+                        {
+                          rotate: chefRotateAnim.interpolate({
+                            inputRange: [-1, 0, 1],
+                            outputRange: ['-3deg', '0deg', '3deg'],
+                          })
+                        },
+                      ],
+                    },
+                  ]}>
+                    <MaterialIcons
+                      name={
+                        currentOrder.status === 'DELIVERED'
+                          ? "check-circle"
+                          : currentOrder.status === 'READY'
+                            ? "room-service"
+                            : "restaurant"
+                      }
+                      size={60}
+                      color="#FFFFFF"
+                    />
+                  </Animated.View>
+                </View>
+
+                {/* Status Message */}
+                <Text
+                  fontSize={18}
+                  fontWeight="700"
+                  color={DesignTokens.colors.brown[900]}
+                  textAlign="center"
+                  marginTop={16}
+                  marginBottom={8}
+                >
+                  {currentOrder.status === 'DELIVERED'
+                    ? 'Your order has been delivered!'
+                    : currentOrder.status === 'READY'
+                      ? 'Your order is ready for pickup!'
+                      : 'Our chefs are working on your order!'}
+                </Text>
+
+                {/* Estimated Arrival Label */}
+                <Text
+                  fontSize={12}
+                  fontWeight="600"
+                  color={currentOrder.status === 'DELIVERED' ? DesignTokens.colors.semantic.success : DesignTokens.colors.orange[500]}
+                  textTransform="uppercase"
+                  letterSpacing={1}
+                  marginTop={8}
+                >
+                  {currentOrder.status === 'DELIVERED' ? 'STATUS' : 'ESTIMATED ARRIVAL'}
+                </Text>
+
+                {/* Estimated Time — shimmer when PREPARING */}
+                <Animated.View style={
+                  currentOrder.status === 'PREPARING'
+                    ? { opacity: shimmerAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 0.4] }) }
+                    : undefined
+                }>
+                  <Text
+                    fontSize={32}
+                    fontWeight="700"
+                    color={DesignTokens.colors.brown[900]}
+                    marginTop={4}
+                  >
+                    {estimatedArrival}
+                  </Text>
+                </Animated.View>
+              </Animated.View>
+
+              {/* Progress Tracker */}
+              <YStack marginBottom={16}>
+                <View style={styles.progressWrapper}>
+                  {progressSteps.map((step, index) => {
+                    const isActive = step.isActive;
+                    const isLast = index === progressSteps.length - 1;
+                    const nextStep = !isLast ? progressSteps[index + 1] : null;
+                    const isNextActive = nextStep?.isActive || false;
+                    const lineActive = isActive && isNextActive;
+                    const isReadyStep = step.id === 'ready';
+                    const isReadyPulsing = isReadyStep && currentOrder.status === 'READY';
+                    const isPreparingStep = step.id === 'preparing';
+                    const isPreparingPulsing = isPreparingStep && currentOrder.status === 'PREPARING';
+                    const isDelivered = currentOrder.status === 'DELIVERED';
+
+                    // Determine if this connector line is the "leading edge" being animated
+                    const isAnimatingPreparingLine = !isLast && step.id === 'placed' && currentOrder.status === 'PREPARING';
+                    const isAnimatingReadyLine = !isLast && step.id === 'ready' && currentOrder.status === 'READY';
+                    const isAnimatingLine = isAnimatingPreparingLine || isAnimatingReadyLine;
+
+                    return (
+                      <View key={step.id} style={styles.progressItemContainer}>
+                        <View style={styles.progressStep}>
+                          {/* Step Circle — animated for Preparing, Ready & Delivered steps */}
+                          <Animated.View
+                            style={[
+                              styles.progressCircle,
+                              isActive
+                                ? (isDelivered
+                                  ? [styles.progressCircleActive, {
+                                    backgroundColor: cascadeAnims[index].interpolate({
+                                      inputRange: [0, 1],
+                                      outputRange: [DesignTokens.colors.orange[500], DesignTokens.colors.semantic.success],
+                                    }),
+                                  }]
+                                  : isReadyPulsing
+                                    ? [styles.progressCircleActive, { backgroundColor: DesignTokens.colors.semantic.success }]
+                                    : styles.progressCircleActive)
+                                : styles.progressCircleInactive,
+                              isReadyPulsing && { transform: [{ scale: readyPulseAnim }, { translateY: deliveryBounceAnim }] },
+                              isPreparingPulsing && { transform: [{ scale: preparingPulseAnim }] },
+                            ]}
+                          >
+                            <MaterialIcons
+                              name={isReadyPulsing ? 'room-service' as any : step.icon as any}
+                              size={20}
+                              color={isActive ? '#FFFFFF' : DesignTokens.colors.lightBrown[500]}
+                            />
+                          </Animated.View>
+
+                          {/* Step Label */}
+                          <Text
+                            fontSize={12}
+                            fontWeight={isReadyPulsing || isPreparingPulsing || isDelivered ? '700' : '500'}
+                            color={
+                              isDelivered
+                                ? DesignTokens.colors.semantic.success
+                                : isReadyPulsing
+                                  ? DesignTokens.colors.semantic.success
+                                  : isActive
+                                    ? DesignTokens.colors.orange[500]
+                                    : DesignTokens.colors.lightBrown[500]
+                            }
+                            marginTop={8}
+                            textAlign="center"
+                          >
+                            {step.label}
+                          </Text>
+                        </View>
+
+                        {/* Connector Line — animated fill on leading edge */}
+                        {!isLast && (
+                          <View
+                            style={[
+                              styles.progressLine,
+                              styles.progressLineInactive,
+                            ]}
+                          >
+                            {(lineActive || isAnimatingLine) && (
+                              <Animated.View
+                                style={[
+                                  StyleSheet.absoluteFill,
+                                  {
+                                    backgroundColor: isDelivered
+                                      ? DesignTokens.colors.semantic.success
+                                      : DesignTokens.colors.orange[500],
+                                    width: isAnimatingPreparingLine
+                                      ? progressLineFill.interpolate({
+                                        inputRange: [0, 1],
+                                        outputRange: ['0%', '100%'],
+                                      })
+                                      : isAnimatingReadyLine
+                                        ? readyToServedLineFill.interpolate({
+                                          inputRange: [0, 1],
+                                          outputRange: ['0%', '100%'],
+                                        })
+                                        : '100%',
+                                  },
+                                ]}
+                              />
+                            )}
+                          </View>
+                        )}
+                      </View>
+                    );
+                  })}
+                </View>
+              </YStack>
+
+              {/* View Details Section */}
+              <TouchableOpacity
+                onPress={() => setShowDetails(!showDetails)}
+                style={styles.detailsButton}
+                activeOpacity={0.7}
+              >
+                <Text
+                  fontSize={16}
+                  fontWeight="600"
+                  color={DesignTokens.colors.brown[900]}
+                >
+                  View Details
+                </Text>
                 <MaterialIcons
-                  name={
-                    currentOrder.status === 'DELIVERED'
-                      ? "check-circle"
-                      : currentOrder.status === 'READY'
-                        ? "notifications-active"
-                        : "restaurant"
-                  }
-                  size={60}
-                  color="#FFFFFF"
+                  name={showDetails ? 'keyboard-arrow-up' : 'keyboard-arrow-down'}
+                  size={24}
+                  color="#000000"
                 />
-              </View>
-            </View>
+              </TouchableOpacity>
 
-            {/* Status Message */}
-            <Text
-              fontSize={18}
-              fontWeight="700"
-              color={DesignTokens.colors.brown[900]}
-              textAlign="center"
-              marginTop={16}
-              marginBottom={8}
-            >
-              {currentOrder.status === 'DELIVERED'
-                ? 'Your order has been delivered!'
-                : currentOrder.status === 'READY'
-                  ? 'Your order is ready for pickup!'
-                  : 'Our chefs are working on your order!'}
-            </Text>
-
-            {/* Estimated Arrival Label */}
-            <Text
-              fontSize={12}
-              fontWeight="600"
-              color={currentOrder.status === 'DELIVERED' ? DesignTokens.colors.semantic.success : DesignTokens.colors.orange[500]}
-              textTransform="uppercase"
-              letterSpacing={1}
-              marginTop={8}
-            >
-              {currentOrder.status === 'DELIVERED' ? 'STATUS' : 'ESTIMATED ARRIVAL'}
-            </Text>
-
-            {/* Estimated Time */}
-            <Text
-              fontSize={32}
-              fontWeight="700"
-              color={DesignTokens.colors.brown[900]}
-              marginTop={4}
-            >
-              {estimatedArrival}
-            </Text>
-          </Animated.View>
-
-          {/* Progress Tracker */}
-          <YStack marginBottom={16}>
-            <View style={styles.progressWrapper}>
-              {progressSteps.map((step, index) => {
-                const isActive = step.isActive;
-                const isLast = index === progressSteps.length - 1;
-                const nextStep = !isLast ? progressSteps[index + 1] : null;
-                const isNextActive = nextStep?.isActive || false;
-                const lineActive = isActive && isNextActive;
-                const isReadyStep = step.id === 'ready';
-                const isReadyPulsing = isReadyStep && currentOrder.status === 'READY';
-
-                return (
-                  <View key={step.id} style={styles.progressItemContainer}>
-                    <View style={styles.progressStep}>
-                      {/* Step Circle — animated for Ready step */}
-                      <Animated.View
-                        style={[
-                          styles.progressCircle,
-                          isActive
-                            ? (isReadyPulsing
-                                ? [styles.progressCircleActive, { backgroundColor: DesignTokens.colors.semantic.success }]
-                                : styles.progressCircleActive)
-                            : styles.progressCircleInactive,
-                          isReadyPulsing && { transform: [{ scale: readyPulseAnim }] },
-                        ]}
-                      >
-                        <MaterialIcons
-                          name={step.icon as any}
-                          size={20}
-                          color={isActive ? '#FFFFFF' : DesignTokens.colors.lightBrown[500]}
-                        />
-                      </Animated.View>
-
-                      {/* Step Label */}
-                      <Text
-                        fontSize={12}
-                        fontWeight={isReadyPulsing ? '700' : '500'}
-                        color={
-                          isReadyPulsing
-                            ? DesignTokens.colors.semantic.success
-                            : isActive
-                              ? DesignTokens.colors.orange[500]
-                              : DesignTokens.colors.lightBrown[500]
-                        }
-                        marginTop={8}
-                        textAlign="center"
-                      >
-                        {step.label}
+              {/* Expandable Details */}
+              {showDetails && (
+                <YStack
+                  backgroundColor="white"
+                  borderRadius={12}
+                  padding={20}
+                  marginTop={12}
+                  gap={16}
+                >
+                  <XStack justifyContent="space-between">
+                    <Text fontSize={14} color={DesignTokens.colors.lightBrown[500]}>
+                      Order ID:
+                    </Text>
+                    <Text fontSize={14} fontWeight="600" color={DesignTokens.colors.brown[900]}>
+                      {currentOrder.id.substring(0, 8).toUpperCase()}
+                    </Text>
+                  </XStack>
+                  <XStack justifyContent="space-between">
+                    <Text fontSize={14} color={DesignTokens.colors.lightBrown[500]}>
+                      Restaurant:
+                    </Text>
+                    <Text fontSize={14} fontWeight="600" color={DesignTokens.colors.brown[900]}>
+                      {restaurant?.name || 'Restaurant'}
+                    </Text>
+                  </XStack>
+                  {currentOrder.table && (
+                    <XStack justifyContent="space-between">
+                      <Text fontSize={14} color={DesignTokens.colors.lightBrown[500]}>
+                        Table:
                       </Text>
-                    </View>
-
-                    {/* Connector Line */}
-                    {!isLast && (
-                      <View
-                        style={[
-                          styles.progressLine,
-                          lineActive
-                            ? styles.progressLineActive
-                            : styles.progressLineInactive,
-                        ]}
-                      />
-                    )}
-                  </View>
-                );
-              })}
-            </View>
-          </YStack>
-
-          {/* View Details Section */}
-          <TouchableOpacity
-            onPress={() => setShowDetails(!showDetails)}
-            style={styles.detailsButton}
-            activeOpacity={0.7}
-          >
-            <Text
-              fontSize={16}
-              fontWeight="600"
-              color={DesignTokens.colors.brown[900]}
-            >
-              View Details
-            </Text>
-            <MaterialIcons
-              name={showDetails ? 'keyboard-arrow-up' : 'keyboard-arrow-down'}
-              size={24}
-              color="#000000"
-            />
-          </TouchableOpacity>
-
-          {/* Expandable Details */}
-          {showDetails && (
-            <YStack
-              backgroundColor="white"
-              borderRadius={12}
-              padding={20}
-              marginTop={12}
-              gap={16}
-            >
-              <XStack justifyContent="space-between">
-                <Text fontSize={14} color={DesignTokens.colors.lightBrown[500]}>
-                  Order ID:
-                </Text>
-                <Text fontSize={14} fontWeight="600" color={DesignTokens.colors.brown[900]}>
-                  {currentOrder.id.substring(0, 8).toUpperCase()}
-                </Text>
-              </XStack>
-              <XStack justifyContent="space-between">
-                <Text fontSize={14} color={DesignTokens.colors.lightBrown[500]}>
-                  Restaurant:
-                </Text>
-                <Text fontSize={14} fontWeight="600" color={DesignTokens.colors.brown[900]}>
-                  {restaurant?.name || 'Restaurant'}
-                </Text>
-              </XStack>
-              {currentOrder.table && (
-                <XStack justifyContent="space-between">
-                  <Text fontSize={14} color={DesignTokens.colors.lightBrown[500]}>
-                    Table:
-                  </Text>
-                  <Text fontSize={14} fontWeight="600" color={DesignTokens.colors.brown[900]}>
-                    {currentOrder.table.tableNumber || currentOrder.table.uniqueId}
-                  </Text>
-                </XStack>
-              )}
-              <XStack justifyContent="space-between">
-                <Text fontSize={14} color={DesignTokens.colors.lightBrown[500]}>
-                  Placed:
-                </Text>
-                <Text fontSize={14} fontWeight="600" color={DesignTokens.colors.brown[900]}>
-                  {formatDate(currentOrder.createdAt)}
-                </Text>
-              </XStack>
-              <XStack justifyContent="space-between" marginTop={8}>
-                <Text fontSize={18} fontWeight="700" color={DesignTokens.colors.brown[900]}>
-                  Total:
-                </Text>
-                <Text fontSize={20} fontWeight="700" color={DesignTokens.colors.orange[500]}>
-                  ₹{parseFloat((currentOrder.totalAmount || 0).toString()).toFixed(2)}
-                </Text>
-              </XStack>
-
-              {currentOrder.orderItems && currentOrder.orderItems.length > 0 && (
-                <YStack marginTop={16} gap={12}>
-                  <Text fontSize={16} fontWeight="700" color={DesignTokens.colors.brown[900]} marginBottom={8}>
-                    Order Items ({currentOrder.orderItems.length})
-                  </Text>
-                  {currentOrder.orderItems.map((item) => (
-                    <XStack
-                      key={item.id}
-                      justifyContent="space-between"
-                      paddingVertical={8}
-                      borderBottomWidth={1}
-                      borderBottomColor={DesignTokens.colors.beige[200]}
-                    >
-                      <YStack flex={1}>
-                        <Text fontSize={14} fontWeight="600" color={DesignTokens.colors.brown[900]}>
-                          {item.menuItem?.name || 'Menu Item'}
-                        </Text>
-                        <Text fontSize={12} color={DesignTokens.colors.lightBrown[500]} marginTop={4}>
-                          Qty: {item.quantity} × ₹{parseFloat((item.basePrice || item.price || 0).toString()).toFixed(2)}
-                        </Text>
-                      </YStack>
-                      <Text fontSize={14} fontWeight="700" color={DesignTokens.colors.brown[900]}>
-                        ₹{parseFloat((item.totalPrice || (parseFloat((item.basePrice || item.price || 0).toString()) * item.quantity)).toString()).toFixed(2)}
+                      <Text fontSize={14} fontWeight="600" color={DesignTokens.colors.brown[900]}>
+                        {currentOrder.table.tableNumber || currentOrder.table.uniqueId}
                       </Text>
                     </XStack>
-                  ))}
+                  )}
+                  <XStack justifyContent="space-between">
+                    <Text fontSize={14} color={DesignTokens.colors.lightBrown[500]}>
+                      Placed:
+                    </Text>
+                    <Text fontSize={14} fontWeight="600" color={DesignTokens.colors.brown[900]}>
+                      {formatDate(currentOrder.createdAt)}
+                    </Text>
+                  </XStack>
+                  <XStack justifyContent="space-between" marginTop={8}>
+                    <Text fontSize={18} fontWeight="700" color={DesignTokens.colors.brown[900]}>
+                      Total:
+                    </Text>
+                    <Text fontSize={20} fontWeight="700" color={DesignTokens.colors.orange[500]}>
+                      ₹{parseFloat((currentOrder.totalAmount || 0).toString()).toFixed(2)}
+                    </Text>
+                  </XStack>
+
+                  {currentOrder.orderItems && currentOrder.orderItems.length > 0 && (
+                    <YStack marginTop={16} gap={12}>
+                      <Text fontSize={16} fontWeight="700" color={DesignTokens.colors.brown[900]} marginBottom={8}>
+                        Order Items ({currentOrder.orderItems.length})
+                      </Text>
+                      {currentOrder.orderItems.map((item) => (
+                        <XStack
+                          key={item.id}
+                          justifyContent="space-between"
+                          paddingVertical={8}
+                          borderBottomWidth={1}
+                          borderBottomColor={DesignTokens.colors.beige[200]}
+                        >
+                          <YStack flex={1}>
+                            <Text fontSize={14} fontWeight="600" color={DesignTokens.colors.brown[900]}>
+                              {item.menuItem?.name || 'Menu Item'}
+                            </Text>
+                            <Text fontSize={12} color={DesignTokens.colors.lightBrown[500]} marginTop={4}>
+                              Qty: {item.quantity} × ₹{parseFloat((item.basePrice || item.price || 0).toString()).toFixed(2)}
+                            </Text>
+                          </YStack>
+                          <Text fontSize={14} fontWeight="700" color={DesignTokens.colors.brown[900]}>
+                            ₹{parseFloat((item.totalPrice || (parseFloat((item.basePrice || item.price || 0).toString()) * item.quantity)).toString()).toFixed(2)}
+                          </Text>
+                        </XStack>
+                      ))}
+                    </YStack>
+                  )}
                 </YStack>
               )}
             </YStack>
-          )}
-        </YStack>
-      </ScrollView>
+          </ScrollView>
         )
       ) : (
         <View style={styles.historyContainer}>
           {renderOrderHistory()}
-          
+
           {/* Order Details Modal for History */}
           {selectedHistoryOrder && showDetails && (
             <View style={styles.modalOverlay}>
@@ -840,6 +1196,62 @@ export function OrderStatusScreen({
         </View>
       )}
 
+      {/* Confetti Celebration (Task 5) */}
+      {confettiVisible && (
+        <View style={styles.confettiContainer} pointerEvents="none">
+          {confettiParticles.map((particle, i) => {
+            const colors = ['#F97316', '#22C55E', '#3B82F6', '#EF4444', '#F59E0B', '#8B5CF6', '#EC4899'];
+            const color = colors[i % colors.length];
+            const size = 8 + (i % 3) * 4;
+            const startX = ((i / confettiParticles.length) * 300) - 150;
+            return (
+              <Animated.View
+                key={`confetti-${i}`}
+                style={{
+                  position: 'absolute',
+                  top: 80,
+                  left: '50%',
+                  marginLeft: startX,
+                  width: size,
+                  height: size * 0.6,
+                  backgroundColor: color,
+                  borderRadius: 2,
+                  opacity: particle.opacity,
+                  transform: [
+                    { translateY: particle.translateY },
+                    { translateX: particle.translateX },
+                    {
+                      rotate: particle.rotate.interpolate({
+                        inputRange: [-5, 5],
+                        outputRange: ['-360deg', '360deg'],
+                      })
+                    },
+                  ],
+                }}
+              />
+            );
+          })}
+        </View>
+      )}
+
+      {/* Order Complete Overlay (Task 5) */}
+      {overlayVisible && (
+        <Animated.View
+          style={[styles.celebrationOverlay, {
+            opacity: overlayOpacity,
+            transform: [{ scale: overlayScale }],
+          }]}
+          pointerEvents="none"
+        >
+          <View style={styles.celebrationBadge}>
+            <MaterialIcons name="check-circle" size={36} color="#FFFFFF" />
+            <Text fontSize={24} fontWeight="800" color="#FFFFFF" marginLeft={8}>
+              Order Complete!
+            </Text>
+          </View>
+        </Animated.View>
+      )}
+
       {/* Bottom Action Buttons - Only show for current order tab */}
       {activeTab === 'current' && (
         <XStack
@@ -854,24 +1266,24 @@ export function OrderStatusScreen({
           style={styles.bottomButtons}
         >
           {/* Need Help Button */}
-        
-            <TouchableOpacity
-              style={styles.helpButton}
-              activeOpacity={0.8}
-              onPress={() => {
-                Alert.alert('Need Help?', 'Contact restaurant support for assistance with your order.');
-              }}
+
+          <TouchableOpacity
+            style={styles.helpButton}
+            activeOpacity={0.8}
+            onPress={() => {
+              Alert.alert('Need Help?', 'Contact restaurant support for assistance with your order.');
+            }}
+          >
+            <MaterialIcons name="help-outline" size={20} color={DesignTokens.colors.orange[500]} />
+            <Text
+              fontSize={16}
+              fontWeight="600"
+              color={DesignTokens.colors.orange[500]}
+              marginLeft={8}
             >
-              <MaterialIcons name="help-outline" size={20} color={DesignTokens.colors.orange[500]} />
-              <Text
-                fontSize={16}
-                fontWeight="600"
-                color={DesignTokens.colors.orange[500]}
-                marginLeft={8}
-              >
-                Need Help?
-              </Text>
-            </TouchableOpacity>
+              Need Help?
+            </Text>
+          </TouchableOpacity>
 
           {/* Order More Button */}
           <TouchableOpacity
@@ -1074,6 +1486,34 @@ const styles = StyleSheet.create({
     padding: 24,
     width: '90%',
     maxHeight: '80%',
+    ...DesignTokens.shadows.lg,
+  },
+  confettiContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 50,
+    overflow: 'hidden',
+  },
+  celebrationOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 100,
+  },
+  celebrationBadge: {
+    backgroundColor: 'rgba(34, 197, 94, 0.95)',
+    paddingHorizontal: 32,
+    paddingVertical: 20,
+    borderRadius: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
     ...DesignTokens.shadows.lg,
   },
 });

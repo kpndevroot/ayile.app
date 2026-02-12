@@ -44,7 +44,7 @@
 
 ---
 
-- [ ] **3. Animation While Order Is Being Prepared**
+- [x] **3. Animation While Order Is Being Prepared**
 
 - **Priority**: Medium
 - **Type**: UI Enhancement
@@ -67,7 +67,7 @@
 
 ---
 
-- [ ] **4. Animation While Order Is Being Delivered**
+- [x] **4. Animation While Order Is Being Delivered**
 
 - **Priority**: Medium
 - **Type**: UI Enhancement
@@ -85,7 +85,7 @@
 
 ---
 
-- [ ] **5. Animation While Order Is Completed**
+- [x] **5. Animation While Order Is Completed**
 
 - **Priority**: Medium
 - **Type**: UI Enhancement

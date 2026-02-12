@@ -6,6 +6,7 @@ import { Button } from '@tamagui/button';
 import { useFocusEffect, useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import * as Haptics from 'expo-haptics';
 import { ThemedView } from '@/components/themed-view';
 import { TopBar } from '@/components/ui/TopBar';
 import { OrderStatusScreen } from '@/components/order/OrderStatusScreen';
@@ -293,6 +294,7 @@ export default function OrderTab() {
               const isCurrentOrder = order && updatedOrder.id === order.id;
               const isSelectedOrder = selectedOrder && updatedOrder.id === selectedOrder.id;
               if (isCurrentOrder || isSelectedOrder) {
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
                 showNotification({
                   type: 'success',
                   title: 'Order delivered!',
