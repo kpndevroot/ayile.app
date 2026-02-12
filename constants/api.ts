@@ -12,6 +12,7 @@ export const API_ENDPOINTS = {
     BY_ID: (id: string) => `/api/users/${id}`,
   },
   MENU_ITEMS: '/api/menu-items',
+  MENU_ITEM_UPLOAD_IMAGE: (id: string) => `/api/menu-items/${id}/upload-image`,
   ORDERS: {
     BASE: '/api/orders',
     BY_ID: (id: string) => `/api/orders/${id}`,

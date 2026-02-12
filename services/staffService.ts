@@ -66,6 +66,22 @@ function formatTimeAgo(date: Date): string {
   return `${diffYears}y ago`;
 }
 
+export interface StaffMenuItem {
+  id: string;
+  name: string;
+  description?: string;
+  basePrice: number;
+  imageUrl?: string;
+  isAvailable: boolean;
+  dietaryTypes: string[];
+  spicyLevel?: number;
+  prepTimeMinutes?: number;
+  category?: {
+    id: string;
+    name: string;
+  };
+}
+
 export class StaffService {
   /**
    * Get staff user's restaurant ID
@@ -657,6 +673,51 @@ export class StaffService {
   }
 
   /**
+   * Upload image for a menu item
+   */
+  static async uploadMenuItemImage(menuItemId: string, imageUri: string): Promise<any> {
+    try {
+      const token = await StorageService.getAuthToken();
+      if (!token) {
+        throw new Error('Not authenticated');
+      }
+
+      const formData = new FormData();
+      const filename = imageUri.split('/').pop() || 'photo.jpg';
+      const match = /\.(\w+)$/.exec(filename);
+      const type = match ? `image/${match[1]}` : 'image/jpeg';
+
+      formData.append('image', {
+        uri: imageUri,
+        name: filename,
+        type,
+      } as any);
+
+      const response = await fetch(
+        `${API_BASE_URL}${API_ENDPOINTS.MENU_ITEM_UPLOAD_IMAGE(menuItemId)}`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+          body: formData,
+        }
+      );
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to upload image');
+      }
+
+      const data = await response.json();
+      return data.menuItem || data;
+    } catch (error) {
+      console.error('Error uploading menu item image:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Get restaurant details
    */
   static async getRestaurantDetails(): Promise<any | null> {
@@ -679,6 +740,62 @@ export class StaffService {
     } catch (error) {
       console.error('Error fetching restaurant details:', error);
       return null;
+    }
+  }
+
+  /**
+   * Get menu items for restaurant
+   */
+  static async getMenuItems(): Promise<StaffMenuItem[]> {
+    try {
+      const restaurantId = await this.getRestaurantId();
+      if (!restaurantId) {
+        return [];
+      }
+
+      const response = await authenticatedFetch(
+        `${API_BASE_URL}${API_ENDPOINTS.MENU_ITEMS}?restaurantId=${restaurantId}`
+      );
+
+      if (!response.ok) {
+        try {
+          const errorData = await response.json();
+          console.warn('API returned error:', errorData.error || 'Unknown error');
+        } catch {
+          // Ignore JSON parse errors
+        }
+        return [];
+      }
+
+      const data = await response.json();
+      return data.data?.menuItems || [];
+    } catch (error: any) {
+      if (error.message && !error.message.includes('Restaurant ID not found')) {
+        console.warn('Error fetching menu items:', error.message);
+      }
+      return [];
+    }
+  }
+
+  /**
+   * Delete a menu item
+   */
+  static async deleteMenuItem(menuItemId: string): Promise<void> {
+    try {
+      const response = await authenticatedFetch(
+        `${API_BASE_URL}${API_ENDPOINTS.MENU_ITEMS}/${menuItemId}`,
+        {
+          method: 'DELETE',
+        }
+      );
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to delete menu item');
+      }
+    } catch (error) {
+      console.error('Error deleting menu item:', error);
+      throw error;
     }
   }
 }

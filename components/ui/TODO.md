@@ -51,11 +51,11 @@
 
 ---
 
-- [ ] **3. Image Upload for Menu Items**
+- [x] **3. Image Upload for Menu Items**
 
 - **Priority**: Medium
 - **Type**: Feature
-- **Status**: Backend Ready, Frontend Not Wired
+- **Status**: Completed
 
 **Problem**: The add-menu-item screen has a "Tap to add photo" placeholder (`Forks/app/(staff)/add-menu-item.tsx:137-183`) with no `onPress` handler. The backend upload endpoint is fully implemented.
 

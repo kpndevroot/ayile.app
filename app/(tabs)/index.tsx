@@ -99,7 +99,7 @@ export default function HomeScreen() {
 
         // Redirect staff/ADMIN users to staff dashboard
         if (userInfo.role === 'STAFF' || userInfo.role === 'ADMIN') {
-          router.replace('/(staff)/dashboard');
+          router.replace('/(staff)/(tabs)/dashboard');
           setLoading(false);
           return;
         }
@@ -144,7 +144,7 @@ export default function HomeScreen() {
 
     // Redirect staff/ADMIN users to staff dashboard
     if (data.role === 'STAFF' || data.role === 'ADMIN') {
-      router.replace('/(staff)/dashboard');
+      router.replace('/(staff)/(tabs)/dashboard');
       return;
     }
 
@@ -162,7 +162,7 @@ export default function HomeScreen() {
 
     // Redirect staff/ADMIN users to staff dashboard
     if (data.role === 'STAFF' || data.role === 'ADMIN') {
-      router.replace('/(staff)/dashboard');
+      router.replace('/(staff)/(tabs)/dashboard');
       return;
     }
 
