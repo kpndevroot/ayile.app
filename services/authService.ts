@@ -44,7 +44,7 @@ export class AuthService {
     };
   }
 
-  static async signup(data: SignupData): Promise<User> {
+  static async signup(data: SignupData): Promise<{ user: User; token: string }> {
     // Split name by space into firstName and lastName
     const trimmedName = data.name.trim();
     const nameParts = trimmedName.split(/\s+/).filter(part => part.length > 0);
@@ -76,9 +76,10 @@ export class AuthService {
       throw new Error(responseData.error || 'Signup failed');
     }
 
-    // Return the user data from the API response
-    // Name is split into firstName and lastName before sending to API
-    return responseData.user;
+    return {
+      user: responseData.user,
+      token: responseData.token,
+    };
   }
 
   static async saveAuthData(user: User, token: string): Promise<void> {

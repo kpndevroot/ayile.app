@@ -9,9 +9,11 @@ import { AuthService } from '@/services/authService';
 import { useRouter, useFocusEffect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_BASE_URL, API_ENDPOINTS } from '@/constants/api';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function ProfileScreen() {
   const router = useRouter();
+  const { isAuthenticated, requireAuth, logout: contextLogout, setAuthMode } = useAuth();
   const [userData, setUserData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -84,41 +86,80 @@ export default function ProfileScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              // Call logout API
-              await AuthService.logout();
-
-              // Clear all storage - this must happen before navigation
-              await StorageService.clearAll();
-
-              // Set a flag to trigger re-check in index.tsx
-              // This ensures the login screen is shown even if component is already mounted
-              await AsyncStorage.setItem('@forks_force_logout', 'true');
-
-              // Small delay to ensure storage operations complete
-              await new Promise(resolve => setTimeout(resolve, 150));
-
-              // Navigate to index tab which will check user status and show login screen
-              // Using replace to prevent going back to profile
+              setUserData(null);
+              await contextLogout();
               router.replace('/(tabs)/' as any);
             } catch (error) {
               console.error('Logout failed:', error);
-              // Even on error, clear storage and navigate
-              try {
-                await StorageService.clearAll();
-                await AsyncStorage.setItem('@forks_force_logout', 'true');
-                await new Promise(resolve => setTimeout(resolve, 150));
-                router.replace('/(tabs)/' as any);
-              } catch (clearError) {
-                console.error('Error clearing storage:', clearError);
-                // Force navigation even if clearing fails
-                router.replace('/(tabs)/' as any);
-              }
+              router.replace('/(tabs)/' as any);
             }
           },
         },
       ]
     );
   };
+
+  if (!isAuthenticated) {
+    return (
+      <ThemedView style={styles.container}>
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          <YStack
+            flex={1}
+            paddingHorizontal={20}
+            paddingTop={60}
+            paddingBottom={40}
+            maxWidth={500}
+            width="100%"
+            alignSelf="center"
+            backgroundColor="$beige1"
+            alignItems="center"
+            gap={16}
+          >
+            <YStack
+              width={80}
+              height={80}
+              borderRadius={40}
+              backgroundColor="#E8E0D6"
+              alignItems="center"
+              justifyContent="center"
+              marginBottom={8}
+            >
+              <MaterialIcons name="person" size={40} color="#A68B6B" />
+            </YStack>
+            <Text fontSize={24} fontWeight="700" color="$brown9" textAlign="center">
+              Welcome to Forks
+            </Text>
+            <Text fontSize={16} color="$lightBrown5" textAlign="center">
+              Log in to view your profile, track orders, and more.
+            </Text>
+            <TouchableOpacity
+              style={styles.loginButton}
+              onPress={() => requireAuth(() => loadUserData())}
+              activeOpacity={0.8}
+            >
+              <Text fontSize={18} fontWeight="600" color="white">
+                Log In
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => {
+                setAuthMode('signup');
+                requireAuth(() => loadUserData());
+              }}
+              activeOpacity={0.7}
+            >
+              <Text fontSize={16} color="$orange6" fontWeight="600">
+                Create an Account
+              </Text>
+            </TouchableOpacity>
+          </YStack>
+        </ScrollView>
+      </ThemedView>
+    );
+  }
 
   return (
     <ThemedView style={styles.container}>
@@ -318,6 +359,20 @@ const styles = StyleSheet.create({
     padding: 16,
     borderWidth: 1,
     borderColor: '#E8E0D6',
+  },
+  loginButton: {
+    backgroundColor: '#F97316',
+    borderRadius: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+    marginTop: 8,
   },
 });
 

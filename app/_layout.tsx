@@ -6,6 +6,8 @@ import { PortalProvider } from '@tamagui/portal';
 import 'react-native-reanimated';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { AuthProvider } from '@/contexts/AuthContext';
+import { AuthGateModal } from '@/components/auth/AuthGateModal';
 import config from '../tamagui.config';
 
 export const unstable_settings = {
@@ -19,11 +21,14 @@ export default function RootLayout() {
     <TamaguiProvider config={config} defaultTheme={colorScheme === 'dark' ? 'dark' : 'light'}>
       <PortalProvider>
         <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-          <Stack>
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            <Stack.Screen name="(staff)" options={{ headerShown: false }} />
-            <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
-          </Stack>
+          <AuthProvider>
+            <Stack>
+              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+              <Stack.Screen name="(staff)" options={{ headerShown: false }} />
+              <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
+            </Stack>
+            <AuthGateModal />
+          </AuthProvider>
           <StatusBar hidden />
         </ThemeProvider>
       </PortalProvider>

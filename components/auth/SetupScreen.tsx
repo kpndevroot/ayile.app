@@ -6,10 +6,9 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { ThemedView } from '@/components/themed-view';
 import { AuthService } from '@/services/authService';
 import { User, UserRole } from '@/types';
-import { StorageService } from '@/utils/storage';
 
 interface SetupScreenProps {
-  onUserCreated: (user: User) => void;
+  onUserCreated: (user: User, token: string) => void;
   onSwitchToLogin: () => void;
 }
 
@@ -180,19 +179,14 @@ export function SetupScreen({ onUserCreated, onSwitchToLogin }: SetupScreenProps
         password,
         role: 'CUSTOMER' as UserRole,
       })
-      const user = await AuthService.signup({
+      const { user, token } = await AuthService.signup({
         phone: formattedPhone,
         name: fullName.trim(),
         password,
         role: 'CUSTOMER' as UserRole,
       });
 
-      // Save user data to storage
-      await StorageService.setUserData(user);
-      await StorageService.setUserCreated(true);
-      await StorageService.setUserId(user.id);
-
-      onUserCreated(user);
+      onUserCreated(user, token);
     } catch (error: any) {
       console.error('Error creating user:', error);
       

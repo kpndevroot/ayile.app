@@ -1,86 +1,6 @@
 # Forks TODO
 
-- [ ] **1. Lazy Authentication — Defer Login Until Needed**
-
-- **Priority**: High
-- **Type**: UX Flow Change
-
-**Problem**: Currently the app forces login/signup on the Home screen (`app/(tabs)/index.tsx:88-138`) before the user can do anything. The auth gate is in `checkUserStatus()` — if `@forks_user_created` is not `'true'`, it shows `LoginScreen` or `SetupScreen` immediately.
-
-**Goal**: Allow guest browsing (scan QR, view menu, add to cart). Only require login when the user tries to:
-- Place an order (`app/(tabs)/cart.tsx:139-143` — already checks for auth token)
-- Access offers (`app/(tabs)/offers.tsx`)
-- View order history (`app/(tabs)/order.tsx`)
-- Access profile (`app/(tabs)/profile.tsx`)
-
-**Files to modify**:
-- `Forks/app/(tabs)/index.tsx` — Remove the auth gate from `checkUserStatus()` (lines 88-138). Let unauthenticated users through to the QR scanner and menu.
-- `Forks/app/(tabs)/_layout.tsx` — No auth gate here currently (correct).
-- `Forks/components/auth/LoginScreen.tsx` — Reuse as a modal/sheet that pops up when auth is required.
-- `Forks/components/auth/SetupScreen.tsx` — Reuse as a modal/sheet for signup.
-- `Forks/app/(tabs)/cart.tsx` — Already has a soft check at line 139. Enhance to show the login modal instead of just an Alert.
-- `Forks/app/(tabs)/offers.tsx` — Add auth check; show login prompt if not authenticated.
-- `Forks/hooks/useAuth.ts` — Currently exists but is **unused**. Wire it into the app as a centralized auth state provider, or create a new `AuthContext` that exposes a `requireAuth()` method to trigger the login modal from any screen.
-- `Forks/utils/storage.ts` — `StorageService` already handles auth token and user data storage. No changes needed.
-
-**Approach**: Create an `AuthGateModal` component that wraps `LoginScreen`/`SetupScreen` and can be triggered from anywhere via context. When a protected action is attempted, call `requireAuth()` which checks `StorageService.getAuthToken()` and shows the modal if null.
-
----
-
-- [x] **2. Fix Price/Quantity Mismatch — Staff Dashboard Shows Wrong Price**
-
-- **Priority**: Critical (Bug)
-- **Type**: Bug Fix
-- **Status**: Completed
-
-**Problem**: When a customer selects a quantity option (e.g., "Quarter" at INR 100), the staff dashboard shows the "Full" price (e.g., INR 400). This is because the frontend does NOT send the `quantityOptionId` when placing an order — the backend defaults to the first/default quantity option.
-
-**Root cause chain**:
-1. `Forks/components/home/HomePage.tsx:161-176` — `handleAddToCartFromModal()` correctly calculates price from the selected quantity option and bakes it into `menuItem.price`, but does **not** store `quantityOptionId` in the cart item.
-2. `Forks/utils/storage.ts:6-12` — `LocalCartItem` interface has `quantityOptionId` and `quantityLabel` fields, but `addToLocalCart()` (line 143) never populates them.
-3. `Forks/app/(tabs)/cart.tsx:132-136` — Order submission sends only `{ menuItemId, quantity }` — no `quantityOptionId`.
-4. `forks-fastify-api/src/routes/orders/index.ts:550-602` — Backend fetches default quantity option (`isDefault: true`) and uses its price, ignoring the customer's selection.
-
-**Files to modify**:
-- `Forks/components/home/HomePage.tsx` — Pass `quantityOptionId` to `StorageService.addToLocalCart()` at line ~182.
-- `Forks/utils/storage.ts` — Update `addToLocalCart()` (line 143) to accept and store `quantityOptionId` and `quantityLabel`. Also update `addToLocalCart` to use a composite key of `menuItemId + quantityOptionId` for cart deduplication (line 145), so "Quarter Biryani" and "Full Biryani" are separate cart entries.
-- `Forks/app/(tabs)/cart.tsx` — Include `quantityOptionId` in the order payload (line 132-136). Display the `quantityLabel` next to item name in the cart UI.
-- `forks-fastify-api/src/routes/orders/index.ts` — At line ~567, prefer `item.quantityOptionId` if provided. Fall back to default only when missing. Validate the option belongs to the menu item.
-
-**Verification**: After fix, order a "Quarter" item. Check that `OrderItem.quantityLabel` in the DB says "Quarter" (not "Full") and `OrderItem.basePrice` matches the quarter price. Confirm the staff dashboard (`app/(staff)/order-detail.tsx:125-130`) shows the correct price.
-
----
-
-- [x] **3. Image Upload for Menu Items**
-
-- **Priority**: Medium
-- **Type**: Feature
-- **Status**: Completed
-
-**Problem**: The add-menu-item screen has a "Tap to add photo" placeholder (`Forks/app/(staff)/add-menu-item.tsx:137-183`) with no `onPress` handler. The backend upload endpoint is fully implemented.
-
-**Backend (ready)**:
-- `forks-fastify-api/src/utils/uploader.ts` — Handles file validation (5MB max, JPEG/PNG/WebP), Sharp processing (resize 1200x1200, WebP 80%), secure filename generation, stores in `/src/uploads`.
-- `forks-fastify-api/src/routes/menu-items/index.ts` — `POST /api/menu-items/:id/upload-image` (lines 898-1014). Auth-protected (ADMIN/STAFF), deletes old image, returns updated menu item.
-
-**Frontend (needs work)**:
-- `Forks/app/(staff)/add-menu-item.tsx` — Add image picker and upload flow.
-- `Forks/utils/imageUtils.ts` — `getFullImageUrl()` already converts relative paths to full URLs. Ready to use.
-
-**Files to modify**:
-- `Forks/app/(staff)/add-menu-item.tsx`:
-  1. Add `expo-image-picker` import.
-  2. Add image state: `const [selectedImage, setSelectedImage] = useState<string | null>(null)`.
-  3. Wire `onPress` on the photo TouchableOpacity (line 146) to `ImagePicker.launchImageLibraryAsync()`.
-  4. Show selected image preview in the placeholder area.
-  5. After successful `StaffService.createMenuItem()`, call the upload endpoint with `FormData` containing the image.
-- `Forks/services/staffService.ts` — Add `uploadMenuItemImage(menuItemId: string, imageUri: string)` method that POSTs multipart form data to `/api/menu-items/:id/upload-image`.
-
-**Dependencies**: `expo-image-picker` — check if already installed, otherwise run `npx expo install expo-image-picker`.
-
----
-
-- [ ] **4. Scan Another Restaurant QR Code**
+- [ ] **1. Scan Another Restaurant QR Code**
 
 - **Priority**: Low
 - **Type**: Enhancement
@@ -97,7 +17,7 @@
 
 ---
 
-- [ ] **5. Notification for New Orders in Staff Dashboard**
+- [ ] **2. Notification for New Orders in Staff Dashboard**
 
 - **Priority**: High
 - **Type**: Feature
@@ -120,7 +40,7 @@
 
 ---
 
-- [ ] **6. Notification When Order Ready for Delivery**
+- [ ] **3. Notification When Order Ready for Delivery**
 
 - **Priority**: High
 - **Type**: Feature
@@ -140,7 +60,7 @@
 
 ---
 
-- [ ] **7. Animation While Order Is Being Prepared**
+- [ ] **4. Animation While Order Is Being Prepared**
 
 - **Priority**: Medium
 - **Type**: UI Enhancement
@@ -163,7 +83,7 @@
 
 ---
 
-- [ ] **8. Animation While Order Is Being Delivered**
+- [ ] **5. Animation While Order Is Being Delivered**
 
 - **Priority**: Medium
 - **Type**: UI Enhancement
@@ -181,7 +101,7 @@
 
 ---
 
-- [ ] **9. Animation While Order Is Completed**
+- [ ] **6. Animation While Order Is Completed**
 
 - **Priority**: Medium
 - **Type**: UI Enhancement
@@ -199,7 +119,7 @@
 
 ---
 
-- [ ] **10. Add Menu Item — Complete Staff & Admin UI**
+- [ ] **7. Add Menu Item — Complete Staff & Admin UI**
 
 - **Priority**: Medium
 - **Type**: Feature Enhancement
@@ -222,7 +142,7 @@
 
 ---
 
-- [ ] **11. Migrate Order Update Socket to SSE (Server-Sent Events)**
+- [ ] **8. Migrate Order Update Socket to SSE (Server-Sent Events)**
 
 - **Priority**: Low
 - **Type**: Architecture Change

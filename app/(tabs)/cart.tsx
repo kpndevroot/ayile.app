@@ -9,9 +9,11 @@ import { ThemedView } from '@/components/themed-view';
 import { StorageService, LocalCartItem } from '@/utils/storage';
 import { API_BASE_URL, API_ENDPOINTS } from '@/constants/api';
 import { useRouter } from 'expo-router';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function CartScreen() {
   const router = useRouter();
+  const { requireAuth } = useAuth();
   const [restaurantData, setRestaurantData] = useState<any>(null);
   const [localCart, setLocalCart] = useState<LocalCartItem[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -136,12 +138,7 @@ export default function CartScreen() {
         })),
       };
 
-      // Get auth token
       const token = await StorageService.getAuthToken();
-      if (!token) {
-        Alert.alert('Error', 'Please log in to place an order');
-        return;
-      }
 
       const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.ORDERS.BASE}`, {
         method: 'POST',
@@ -193,7 +190,7 @@ export default function CartScreen() {
     }
   };
 
-  const handlePlaceOrder = async () => {
+  const handlePlaceOrder = () => {
     console.log("DEBUG: order placing clicked");
     if (localCart.length === 0) {
       Alert.alert('Error', 'Your cart is empty');
@@ -205,42 +202,36 @@ export default function CartScreen() {
       return;
     }
 
-    const userData = await StorageService.getUserData();
-    if (!userData) {
-      Alert.alert('Error', 'User information not found');
-      return;
-    }
+    requireAuth(async () => {
+      // Check for stored table info
+      const tableInfo = await StorageService.getTableInfo();
+      let tableNumber = null;
 
-    // Check for stored table info
-    const tableInfo = await StorageService.getTableInfo();
-    let tableNumber = null;
-
-    if (tableInfo?.uniqueId && restaurantData.tables) {
-      const table = restaurantData.tables.find(
-        (t: any) => t.uniqueId === tableInfo.uniqueId
-      );
-      if (table) {
-        tableNumber = table.tableNumber ? String(table.tableNumber) : null;
+      if (tableInfo?.uniqueId && restaurantData.tables) {
+        const table = restaurantData.tables.find(
+          (t: any) => t.uniqueId === tableInfo.uniqueId
+        );
+        if (table) {
+          tableNumber = table.tableNumber ? String(table.tableNumber) : null;
+        }
       }
-    }
 
-    if (tableNumber) {
-      // Table info exists, confirm and place
-      Alert.alert(
-        'Place Order',
-        `Table: ${tableNumber}\nTotal: ₹${orderTotal.toFixed(2)}\n\nConfirm your order?`,
-        [
-          { text: 'Cancel', style: 'cancel' },
-          {
-            text: 'Confirm',
-            onPress: () => processOrderPlacement(tableNumber)
-          },
-        ]
-      );
-    } else {
-      // No table info, show modal
-      setShowTableModal(true);
-    }
+      if (tableNumber) {
+        Alert.alert(
+          'Place Order',
+          `Table: ${tableNumber}\nTotal: ₹${orderTotal.toFixed(2)}\n\nConfirm your order?`,
+          [
+            { text: 'Cancel', style: 'cancel' },
+            {
+              text: 'Confirm',
+              onPress: () => processOrderPlacement(tableNumber)
+            },
+          ]
+        );
+      } else {
+        setShowTableModal(true);
+      }
+    });
   };
 
   if (localCart.length === 0) {

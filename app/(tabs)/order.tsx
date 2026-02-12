@@ -18,6 +18,7 @@ import { API_BASE_URL, API_ENDPOINTS } from '@/constants/api';
 import { authenticatedFetch } from '@/utils/api';
 import { DesignTokens } from '@/constants/design';
 import { websocketService } from '@/services/websocketService';
+import { useAuth } from '@/contexts/AuthContext';
 
 /**
  * Order Status Tab
@@ -25,6 +26,7 @@ import { websocketService } from '@/services/websocketService';
  */
 export default function OrderTab() {
   const router = useRouter();
+  const { isAuthenticated, requireAuth } = useAuth();
   const [order, setOrder] = useState<Order | null>(null);
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
   const [userData, setUserData] = useState<any>(null);
@@ -94,6 +96,11 @@ export default function OrderTab() {
       const orderId = await StorageService.getOrderId();
       const restaurantData = await StorageService.getRestaurantData();
       const userData = await StorageService.getUserData();
+
+      if (!userData) {
+        setLoading(false);
+        return;
+      }
 
       if (userData) {
         setUserData(userData);
@@ -365,6 +372,31 @@ export default function OrderTab() {
     return () => clearInterval(interval);
   }, []); // Run once on mount, then refresh every 30 seconds
 
+  if (!isAuthenticated) {
+    return (
+      <ThemedView style={styles.container}>
+        <YStack flex={1} alignItems="center" justifyContent="center" padding={20} gap={16}>
+          <MaterialIcons name="receipt" size={64} color="#D4C4B0" />
+          <Text fontSize={24} fontWeight="700" color="$brown9" textAlign="center">
+            Your Orders
+          </Text>
+          <Text fontSize={16} color="$lightBrown5" textAlign="center">
+            Log in to see your order history and track active orders.
+          </Text>
+          <TouchableOpacity
+            style={styles.loginButton}
+            onPress={() => requireAuth(() => loadData())}
+            activeOpacity={0.8}
+          >
+            <Text fontSize={18} fontWeight="600" color="white">
+              Log In
+            </Text>
+          </TouchableOpacity>
+        </YStack>
+      </ThemedView>
+    );
+  }
+
   if (loading) {
     return (
       <ThemedView style={styles.container}>
@@ -576,6 +608,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 1,
     borderColor: '#F97316',
+  },
+  loginButton: {
+    backgroundColor: '#F97316',
+    borderRadius: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+    marginTop: 8,
   },
 });
 

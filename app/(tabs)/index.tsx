@@ -3,40 +3,31 @@ import { StyleSheet, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { LoadingScreen } from '@/components/ui/LoadingScreen';
-import { LoginScreen } from '@/components/auth/LoginScreen';
-import { SetupScreen } from '@/components/auth/SetupScreen';
+import { useAuth } from '@/contexts/AuthContext';
 
 import { HomePage } from '@/components/home/HomePage';
 import { QRScanner } from '@/components/restaurant/QRScanner';
-import { AuthService } from '@/services/authService';
-import { API_BASE_URL, API_ENDPOINTS } from '@/constants/api';
+import { API_BASE_URL } from '@/constants/api';
 import { StorageService } from '@/utils/storage';
 import { MenuItem } from '@/types';
 
 
-const USER_CREATED_KEY = '@forks_user_created';
-const USER_DATA_KEY = '@forks_user_data';
 const RESTAURANT_DATA_KEY = '@forks_restaurant_data';
 const SCANNED_KEY = '@forks_qr_scanned';
 
 
-// QR Scanner Component - Now imported from components/restaurant/QRScanner
-
-// Main Component
 export default function HomeScreen() {
   const router = useRouter();
-  const [userCreated, setUserCreated] = useState<boolean | null>(null);
-  const [userData, setUserData] = useState<any>(null);
+  const { user, logout } = useAuth();
   const [restaurantData, setRestaurantData] = useState<any>(null);
   const [tableInfo, setTableInfo] = useState<any>(null);
   const [orderId, setOrderId] = useState<string | null>(null);
   const [showScanner, setShowScanner] = useState(false);
   const [loading, setLoading] = useState(true);
   const [scanning, setScanning] = useState(false);
-  const [showLogin, setShowLogin] = useState(false);
 
   useEffect(() => {
-    checkUserStatus();
+    checkStatus();
   }, []);
 
   // Listen for QR scan trigger and logout trigger from bottom navigation
@@ -44,25 +35,12 @@ export default function HomeScreen() {
     React.useCallback(() => {
       const checkTriggers = async () => {
         try {
-          // Check for logout flag
-          const forceLogout = await AsyncStorage.getItem('@forks_force_logout');
-          if (forceLogout === 'true') {
-            // Clear the flag
-            await AsyncStorage.removeItem('@forks_force_logout');
-            // Re-check user status which will show login screen
-            await checkUserStatus();
-            return;
-          }
-
           // Check for QR scan trigger
           const triggerQR = await AsyncStorage.getItem('@forks_trigger_qr_scan');
           if (triggerQR === 'true') {
-            // Clear the flag
             await AsyncStorage.removeItem('@forks_trigger_qr_scan');
-            // Trigger QR scanner (scan another QR if restaurant exists)
             const currentRestaurant = await AsyncStorage.getItem(RESTAURANT_DATA_KEY);
             if (currentRestaurant) {
-              // Clear restaurant data and trigger scan again
               setRestaurantData(null);
               setTableInfo(null);
               setOrderId(null);
@@ -72,7 +50,6 @@ export default function HomeScreen() {
               setShowScanner(true);
               setScanning(true);
             } else {
-              // Just trigger scanner
               setShowScanner(true);
               setScanning(true);
             }
@@ -81,104 +58,48 @@ export default function HomeScreen() {
           console.error('Error checking triggers:', error);
         }
       };
+
+      // If user is staff/admin, redirect to staff dashboard
+      if (user && (user.role === 'STAFF' || user.role === 'ADMIN')) {
+        router.replace('/(staff)/(tabs)/dashboard');
+        return;
+      }
+
       checkTriggers();
-    }, [])
+    }, [user])
   );
 
-  const checkUserStatus = async () => {
+  const checkStatus = async () => {
     try {
-      const created = await AsyncStorage.getItem(USER_CREATED_KEY);
-      const data = await AsyncStorage.getItem(USER_DATA_KEY);
       const restaurant = await AsyncStorage.getItem(RESTAURANT_DATA_KEY);
       const scanned = await AsyncStorage.getItem(SCANNED_KEY);
 
-      if (created === 'true' && data) {
-        const userInfo = JSON.parse(data);
-        setUserCreated(true);
-        setUserData(userInfo);
-
-        // Redirect staff/ADMIN users to staff dashboard
-        if (userInfo.role === 'STAFF' || userInfo.role === 'ADMIN') {
-          router.replace('/(staff)/(tabs)/dashboard');
-          setLoading(false);
-          return;
-        }
-
-        // If user is CUSTOMER and just created, show scanner
-        if (userInfo.role === 'CUSTOMER' && scanned !== 'true') {
-          setShowScanner(true);
-          setScanning(true);
-        }
-
-        // If restaurant data exists, show it
-        if (restaurant) {
-          setRestaurantData(JSON.parse(restaurant));
-        }
-
-        // Load table info and order ID
-        const tableInfoData = await StorageService.getTableInfo();
-        if (tableInfoData) {
-          setTableInfo(tableInfoData);
-        }
-        const savedOrderId = await StorageService.getOrderId();
-        if (savedOrderId) {
-          setOrderId(savedOrderId);
-        }
-      } else {
-        setUserCreated(false);
-        setShowLogin(true); // Show login screen first
+      // If restaurant data exists, show it
+      if (restaurant) {
+        setRestaurantData(JSON.parse(restaurant));
       }
-    } catch (error) {
-      console.error('Error checking user status:', error);
-      setUserCreated(false);
-      setShowLogin(true);
-    } finally {
-      setLoading(false);
-    }
-  };
 
-  const handleUserCreated = async (data: any) => {
-    setUserCreated(true);
-    setUserData(data);
-    setShowLogin(false);
-
-    // Redirect staff/ADMIN users to staff dashboard
-    if (data.role === 'STAFF' || data.role === 'ADMIN') {
-      router.replace('/(staff)/(tabs)/dashboard');
-      return;
-    }
-
-    // If CUSTOMER user, show QR scanner immediately (new user, no scan yet)
-    if (data.role === 'CUSTOMER') {
-      setShowScanner(true);
-      setScanning(true);
-    }
-  };
-
-  const handleLoginSuccess = async (data: any) => {
-    setUserCreated(true);
-    setUserData(data);
-    setShowLogin(false);
-
-    // Redirect staff/ADMIN users to staff dashboard
-    if (data.role === 'STAFF' || data.role === 'ADMIN') {
-      router.replace('/(staff)/(tabs)/dashboard');
-      return;
-    }
-
-    // If CUSTOMER user, check if they have scanned a QR code
-    if (data.role === 'CUSTOMER') {
-      const scanned = await AsyncStorage.getItem(SCANNED_KEY);
-      const restaurant = await AsyncStorage.getItem(RESTAURANT_DATA_KEY);
-
-      // If no restaurant scanned, show QR scanner immediately
+      // If no restaurant scanned, show QR scanner for guests
       if (scanned !== 'true' && !restaurant) {
         setShowScanner(true);
         setScanning(true);
-      } else if (restaurant) {
-        // If restaurant exists, load it
-        setRestaurantData(JSON.parse(restaurant));
       }
+
+      // Load table info and order ID
+      const tableInfoData = await StorageService.getTableInfo();
+      if (tableInfoData) {
+        setTableInfo(tableInfoData);
+      }
+      const savedOrderId = await StorageService.getOrderId();
+      if (savedOrderId) {
+        setOrderId(savedOrderId);
+      }
+    } catch (error) {
+      console.error('Error checking status:', error);
+      setShowScanner(true);
+      setScanning(true);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -191,17 +112,14 @@ export default function HomeScreen() {
       const data = await response.json();
 
       if (response.ok && data.restaurant) {
-        // Clear local cart when scanning a new restaurant
         await StorageService.clearLocalCart();
         setRestaurantData(data.restaurant);
         await AsyncStorage.setItem(RESTAURANT_DATA_KEY, JSON.stringify(data.restaurant));
-        await AsyncStorage.setItem(SCANNED_KEY, 'true'); // Mark as scanned
+        await AsyncStorage.setItem(SCANNED_KEY, 'true');
 
-        // Clear order ID when switching restaurants
         setOrderId(null);
         await StorageService.setOrderId(null);
 
-        // Load table info if available
         const tableInfoData = await StorageService.getTableInfo();
         if (tableInfoData) {
           setTableInfo(tableInfoData);
@@ -232,7 +150,6 @@ export default function HomeScreen() {
     AsyncStorage.removeItem(RESTAURANT_DATA_KEY);
     AsyncStorage.removeItem(SCANNED_KEY);
     StorageService.setOrderId(null);
-    // Clear local cart when scanning again
     StorageService.clearLocalCart();
     setShowScanner(true);
     setScanning(true);
@@ -240,10 +157,7 @@ export default function HomeScreen() {
 
   const handleAddToCart = async (menuItem: MenuItem) => {
     try {
-      // Add item to local cart (no API call)
       await StorageService.addToLocalCart(menuItem, 1);
-
-      // Trigger cart refresh in CustomTabBar and cart screen
       await AsyncStorage.setItem('@forks_refresh_cart', 'true');
     } catch (error) {
       console.error('Error adding item to cart:', error);
@@ -253,47 +167,27 @@ export default function HomeScreen() {
 
   const handleLogout = async () => {
     try {
-      // Call logout API and clear storage (if not already done by TopBar)
-      await AuthService.logout();
-
-      // Clear all AsyncStorage keys to prevent re-loading
-      await AsyncStorage.multiRemove([
-        USER_CREATED_KEY,
-        USER_DATA_KEY,
-        RESTAURANT_DATA_KEY,
-        SCANNED_KEY,
-      ]);
-      await StorageService.setOrderId(null);
-      await StorageService.clearLocalCart();
-    } catch (error) {
-      console.error('Error during logout:', error);
-    } finally {
-      // Reset all state - IMPORTANT: set showLogin first to ensure it takes priority
-      setShowLogin(true); // Show login screen - set this first
-      setUserCreated(false);
-      setUserData(null);
+      // Clear local state
       setRestaurantData(null);
       setTableInfo(null);
       setOrderId(null);
-      setShowScanner(false);
-      setScanning(false);
-      setLoading(false);
+      setShowScanner(true);
+      setScanning(true);
+
+      // Clear restaurant-specific storage
+      await AsyncStorage.multiRemove([RESTAURANT_DATA_KEY, SCANNED_KEY]);
+      await StorageService.setOrderId(null);
+      await StorageService.clearLocalCart();
+
+      // Use context logout
+      await logout();
+    } catch (error) {
+      console.error('Error during logout:', error);
     }
   };
 
   if (loading) {
     return <LoadingScreen />;
-  }
-
-  // Show login screen if explicitly requested (e.g., after logout)
-  // This check must come BEFORE restaurantData and userCreated checks
-  if (showLogin) {
-    return (
-      <LoginScreen
-        onLoginSuccess={handleLoginSuccess}
-        onSwitchToSignup={() => setShowLogin(false)}
-      />
-    );
   }
 
   // Show QR scanner if scanning is active
@@ -303,7 +197,6 @@ export default function HomeScreen() {
 
   // Show menu listing screen if restaurant data exists
   if (restaurantData) {
-    // Get table number from restaurant tables if available
     let tableNumber = '5'; // Default
     if (tableInfo?.uniqueId && restaurantData.tables) {
       const table = restaurantData.tables.find((t: any) => t.uniqueId === tableInfo.uniqueId);
@@ -312,10 +205,9 @@ export default function HomeScreen() {
       }
     }
 
-    // Use redesigned HomePage as menu screen
     return (
       <HomePage
-        userData={userData}
+        userData={user}
         onScanQR={handleScanQR}
         onLogout={handleLogout}
         restaurantId={restaurantData.id}
@@ -324,15 +216,6 @@ export default function HomeScreen() {
     );
   }
 
-  // Show home page if user is created
-  if (userCreated) {
-    return <HomePage userData={userData} onScanQR={handleScanQR} onLogout={handleLogout} />;
-  }
-
-  return (
-    <SetupScreen
-      onUserCreated={handleUserCreated}
-      onSwitchToLogin={() => setShowLogin(true)}
-    />
-  );
+  // Default: show QR scanner prompt (guest with no restaurant scanned)
+  return <QRScanner onScanSuccess={handleQRScanSuccess} onClose={handleCloseScanner} />;
 }

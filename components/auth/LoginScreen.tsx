@@ -19,7 +19,7 @@ interface CountryCode {
 }
 
 interface LoginScreenProps {
-  onLoginSuccess: (user: User) => void;
+  onLoginSuccess: (user: User, token: string) => void;
   onSwitchToSignup: () => void;
 }
 
@@ -256,8 +256,7 @@ export function LoginScreen({ onLoginSuccess, onSwitchToSignup }: LoginScreenPro
         password: password,
       });
 
-      await AuthService.saveAuthData(user, token);
-      onLoginSuccess(user);
+      onLoginSuccess(user, token);
     } catch (error: any) {
       console.error('Error logging in:', error);
 

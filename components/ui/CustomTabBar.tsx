@@ -36,7 +36,6 @@ export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarPro
   const [hasRestaurantSession, setHasRestaurantSession] = useState(false);
   const [cartCount, setCartCount] = useState(0);
   const [currentFocusedTab, setCurrentFocusedTab] = useState<string>('');
-  const [shouldHideTabBar, setShouldHideTabBar] = useState(false);
   
   // Animation refs for each tab
   interface TabAnimation {
@@ -56,42 +55,6 @@ export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarPro
       }
     });
   }, []);
-
-  // Check if user is logged in - hide tab bar if not logged in (showing login/signup)
-  useEffect(() => {
-    const checkAuthState = async () => {
-      try {
-        const userData = await StorageService.getUserData();
-        const userCreated = await StorageService.getUserCreated();
-        
-        // Check if we're on the index route (where login/signup is shown)
-        const isIndexRoute = pathname === '/(tabs)' || pathname === '/(tabs)/' || pathname === '/' || state.routes[state.index]?.name === 'index';
-        
-        // Hide tab bar if:
-        // 1. We're on the index route AND
-        // 2. User is not logged in (login/signup screens are shown)
-        if (isIndexRoute && (!userData || !userCreated)) {
-          setShouldHideTabBar(true);
-        } else {
-          setShouldHideTabBar(false);
-        }
-      } catch (error) {
-        console.error('Error checking auth state:', error);
-        // On error, check if we're on index route and hide if so
-        const isIndexRoute = pathname === '/(tabs)' || pathname === '/(tabs)/' || pathname === '/' || state.routes[state.index]?.name === 'index';
-        setShouldHideTabBar(isIndexRoute);
-      }
-    };
-
-    checkAuthState();
-    
-    // Check periodically for auth state changes (every 500ms for responsiveness)
-    const authInterval = setInterval(checkAuthState, 500);
-    
-    return () => {
-      clearInterval(authInterval);
-    };
-  }, [pathname, state.index, state.routes]);
 
   // Check for active restaurant session and update cart count from local storage
   useEffect(() => {
@@ -307,11 +270,6 @@ export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarPro
   // Remove React.memo to ensure component always re-renders when props change
   // This ensures icon and text colors update properly when isFocused changes
   const TabItem = TabItemComponent;
-
-  // Hide tab bar if showing login/signup screens
-  if (shouldHideTabBar) {
-    return null;
-  }
 
   return (
     <View 
