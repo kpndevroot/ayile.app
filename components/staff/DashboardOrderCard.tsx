@@ -5,7 +5,7 @@ import { YStack, XStack } from '@tamagui/stacks';
 import { DesignTokens } from '@/constants/design';
 import { Card } from '@/components/ui/Card';
 import { StaffOrder } from '@/services/staffService';
-import { CreditCard, Check } from '@tamagui/lucide-icons';
+import { DollarSign, Check } from '@tamagui/lucide-icons';
 
 interface DashboardOrderCardProps {
   order: StaffOrder;
@@ -17,7 +17,7 @@ interface DashboardOrderCardProps {
 
 /**
  * Dashboard Order Card Component
- * Displays a single order card with status, details, and actions
+ * Enhanced with improved touch targets, visual hierarchy, and accessibility
  */
 export function DashboardOrderCard({
   order,
@@ -27,10 +27,10 @@ export function DashboardOrderCard({
   onMarkAsPaid,
 }: DashboardOrderCardProps) {
   const isPaid = order.paymentStatus === 'COMPLETED' || order.paymentStatus === 'PAID';
-  
+
   const handleTogglePayment = () => {
     if (!onMarkAsPaid) return;
-    
+
     const newIsPaid = !isPaid;
     Alert.alert(
       newIsPaid ? 'Mark as Paid' : 'Mark as Not Paid',
@@ -50,93 +50,136 @@ export function DashboardOrderCard({
       ]
     );
   };
+
   return (
     <Card
       padding="lg"
       backgroundColor={DesignTokens.colors.neutral.white}
       borderRadius="lg"
       shadow="sm"
+      style={{
+        shadowColor: DesignTokens.colors.brown[900],
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 8,
+        elevation: 3,
+      }}
     >
-      <YStack space="$3">
+      <YStack space="$4">
+        {/* Header - Enhanced visual hierarchy */}
         <XStack justifyContent="space-between" alignItems="center">
-          <XStack alignItems="center" space="$2">
+          <XStack alignItems="center" space="$3">
             <XStack
-              width={12}
-              height={12}
+              width={20}
+              height={20}
               borderRadius={DesignTokens.radius.full}
               backgroundColor={order.statusColor}
+              style={{
+                shadowColor: order.statusColor,
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.3,
+                shadowRadius: 4,
+                elevation: 2,
+              }}
             />
             <Text
-              fontSize={DesignTokens.typography.fontSize.lg}
-              fontWeight={DesignTokens.typography.fontWeight.bold}
+              fontSize={17}
+              fontWeight="700"
               color={DesignTokens.colors.brown[900]}
             >
               Order #{order.orderNumber}
             </Text>
           </XStack>
           <Text
-            fontSize={DesignTokens.typography.fontSize.sm}
+            fontSize={13}
             color={DesignTokens.colors.lightBrown[500]}
+            fontWeight="600"
           >
             {order.timeAgo}
           </Text>
         </XStack>
-        <Text
-          fontSize={DesignTokens.typography.fontSize.sm}
-          color={DesignTokens.colors.lightBrown[500]}
-        >
-          {order.location}
-        </Text>
-        <XStack justifyContent="space-between" alignItems="center">
+
+        {/* Location and Items Info */}
+        <YStack space="$2">
           <Text
-            fontSize={DesignTokens.typography.fontSize.sm}
-            color={DesignTokens.colors.lightBrown[500]}
+            fontSize={14}
+            color={DesignTokens.colors.lightBrown[600]}
+            fontWeight="500"
           >
-            {order.itemsCount} items
+            {order.location}
           </Text>
-          {/* Payment Status Badge */}
-          <XStack
-            alignItems="center"
-            space="$1"
-            paddingHorizontal="$2"
-            paddingVertical="$1"
-            borderRadius={DesignTokens.radius.md}
-            backgroundColor={isPaid ? '#ECFDF5' : '#FFF7ED'}
-            borderWidth={1}
-            borderColor={isPaid ? DesignTokens.colors.semantic.success : DesignTokens.colors.orange[300]}
-          >
-            {isPaid ? (
-              <Check size={14} color={DesignTokens.colors.semantic.success} />
-            ) : (
-              <CreditCard size={14} color={DesignTokens.colors.orange[600]} />
-            )}
+          <XStack justifyContent="space-between" alignItems="center">
             <Text
-              fontSize={DesignTokens.typography.fontSize.xs}
-              color={isPaid ? DesignTokens.colors.semantic.success : DesignTokens.colors.orange[600]}
-              fontWeight="600"
+              fontSize={15}
+              color={DesignTokens.colors.brown[900]}
+              fontWeight="700"
             >
-              {isPaid ? 'Paid' : 'Not Paid'}
+              {order.itemsCount} items
             </Text>
+            {/* Payment Status Badge - Enhanced visibility */}
+            <XStack
+              alignItems="center"
+              space="$2"
+              paddingHorizontal="$3"
+              paddingVertical="$2"
+              borderRadius={DesignTokens.radius.md}
+              backgroundColor={isPaid ? '#ECFDF5' : '#FFF7ED'}
+              borderWidth={2}
+              borderColor={isPaid ? DesignTokens.colors.semantic.success : DesignTokens.colors.orange[400]}
+              style={{
+                shadowColor: isPaid ? DesignTokens.colors.semantic.success : DesignTokens.colors.orange[500],
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.15,
+                shadowRadius: 4,
+                elevation: 2,
+              }}
+            >
+              {isPaid ? (
+                <Check size={16} color={DesignTokens.colors.semantic.success} strokeWidth={3} />
+              ) : (
+                <DollarSign size={16} color={DesignTokens.colors.orange[600]} />
+              )}
+              <Text
+                fontSize={13}
+                color={isPaid ? DesignTokens.colors.semantic.success : DesignTokens.colors.orange[700]}
+                fontWeight="700"
+              >
+                {isPaid ? 'Paid' : 'Not Paid'}
+              </Text>
+            </XStack>
           </XStack>
-        </XStack>
+        </YStack>
+
+        {/* Action Buttons - Enhanced touch targets */}
         {order.status === 'pending' && (
-          <XStack space="$2" marginTop="$2">
+          <XStack space="$3" marginTop="$2">
             <TouchableOpacity
               style={{ flex: 1 }}
               onPress={() => onReject(order.id)}
+              activeOpacity={0.7}
             >
               <XStack
                 flex={1}
-                paddingVertical="$2"
-                paddingHorizontal="$3"
-                borderRadius={DesignTokens.radius.md}
+                minHeight={56}
+                paddingVertical="$3"
+                paddingHorizontal="$4"
+                borderRadius={12}
                 backgroundColor={DesignTokens.colors.semantic.error}
                 alignItems="center"
                 justifyContent="center"
+                style={{
+                  shadowColor: DesignTokens.colors.semantic.error,
+                  shadowOffset: { width: 0, height: 3 },
+                  shadowOpacity: 0.3,
+                  shadowRadius: 6,
+                  elevation: 3,
+                }}
               >
                 <Text
                   color={DesignTokens.colors.neutral.white}
-                  fontWeight={DesignTokens.typography.fontWeight.semibold}
+                  fontWeight="700"
+                  fontSize={16}
+                  letterSpacing={0.5}
                 >
                   Reject
                 </Text>
@@ -145,19 +188,30 @@ export function DashboardOrderCard({
             <TouchableOpacity
               style={{ flex: 1 }}
               onPress={() => onAccept(order.id)}
+              activeOpacity={0.7}
             >
               <XStack
                 flex={1}
-                paddingVertical="$2"
-                paddingHorizontal="$3"
-                borderRadius={DesignTokens.radius.md}
+                minHeight={56}
+                paddingVertical="$3"
+                paddingHorizontal="$4"
+                borderRadius={12}
                 backgroundColor={DesignTokens.colors.orange[500]}
                 alignItems="center"
                 justifyContent="center"
+                style={{
+                  shadowColor: DesignTokens.colors.orange[500],
+                  shadowOffset: { width: 0, height: 3 },
+                  shadowOpacity: 0.3,
+                  shadowRadius: 6,
+                  elevation: 3,
+                }}
               >
                 <Text
                   color={DesignTokens.colors.neutral.white}
-                  fontWeight={DesignTokens.typography.fontWeight.semibold}
+                  fontWeight="700"
+                  fontSize={16}
+                  letterSpacing={0.5}
                 >
                   Accept
                 </Text>
@@ -165,79 +219,92 @@ export function DashboardOrderCard({
             </TouchableOpacity>
           </XStack>
         )}
+
         {order.status !== 'pending' && (
-          <XStack space="$2" marginTop="$2">
-            {/* Mark as Paid Button - Always visible for better UX */}
+          <XStack space="$3" marginTop="$2">
+            {/* Mark as Paid Button - Enhanced visibility */}
             {onMarkAsPaid && (
               <TouchableOpacity
                 style={{ flex: 1 }}
                 onPress={handleTogglePayment}
-                activeOpacity={0.8}
+                activeOpacity={0.7}
               >
                 <XStack
                   flex={1}
+                  minHeight={56}
                   paddingVertical="$3"
                   paddingHorizontal="$3"
-                  borderRadius={DesignTokens.radius.md}
+                  borderRadius={12}
                   backgroundColor={isPaid ? DesignTokens.colors.semantic.success : DesignTokens.colors.orange[500]}
                   alignItems="center"
                   justifyContent="center"
-                  space="$2"
+                  space="$3"
                   style={{
                     shadowColor: isPaid ? DesignTokens.colors.semantic.success : DesignTokens.colors.orange[500],
-                    shadowOffset: { width: 0, height: 2 },
-                    shadowOpacity: 0.2,
-                    shadowRadius: 4,
+                    shadowOffset: { width: 0, height: 3 },
+                    shadowOpacity: 0.3,
+                    shadowRadius: 6,
                     elevation: 3,
                   }}
                 >
                   {isPaid ? (
                     <>
-                      <Check size={18} color="#FFFFFF" strokeWidth={3} />
+                      <Check size={20} color="#FFFFFF" strokeWidth={3} />
                       <Text
                         color="#FFFFFF"
-                        fontWeight={DesignTokens.typography.fontWeight.bold}
-                        fontSize={DesignTokens.typography.fontSize.sm}
+                        fontWeight="700"
+                        fontSize={15}
+                        letterSpacing={0.5}
                       >
                         PAID
                       </Text>
                     </>
                   ) : (
                     <>
-                      <CreditCard size={18} color="#FFFFFF" />
+                      <DollarSign size={20} color="#FFFFFF" />
                       <Text
                         color="#FFFFFF"
-                        fontWeight={DesignTokens.typography.fontWeight.bold}
-                        fontSize={DesignTokens.typography.fontSize.sm}
+                        fontWeight="700"
+                        fontSize={14}
+                        letterSpacing={0.3}
                       >
-                        MARK AS PAID
+                        MARK PAID
                       </Text>
                     </>
                   )}
                 </XStack>
               </TouchableOpacity>
             )}
-            {/* View Details Button */}
+            {/* View Details Button - Enhanced styling */}
             <TouchableOpacity
               style={{ flex: 1 }}
               onPress={() => onViewDetails(order.id)}
-              activeOpacity={0.8}
+              activeOpacity={0.7}
             >
               <XStack
                 flex={1}
+                minHeight={56}
                 paddingVertical="$3"
                 paddingHorizontal="$3"
-                borderRadius={DesignTokens.radius.md}
-                borderWidth={1.5}
+                borderRadius={12}
+                borderWidth={2}
                 borderColor={DesignTokens.colors.orange[500]}
-                backgroundColor="transparent"
+                backgroundColor={DesignTokens.colors.neutral.white}
                 alignItems="center"
                 justifyContent="center"
+                style={{
+                  shadowColor: DesignTokens.colors.orange[500],
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.1,
+                  shadowRadius: 4,
+                  elevation: 2,
+                }}
               >
                 <Text
-                  color={DesignTokens.colors.orange[500]}
-                  fontWeight={DesignTokens.typography.fontWeight.semibold}
-                  fontSize={DesignTokens.typography.fontSize.sm}
+                  color={DesignTokens.colors.orange[600]}
+                  fontWeight="700"
+                  fontSize={15}
+                  letterSpacing={0.5}
                 >
                   View Details
                 </Text>

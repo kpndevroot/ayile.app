@@ -1,4 +1,5 @@
 import React from 'react';
+import { TouchableOpacity } from 'react-native';
 import { Text } from '@tamagui/core';
 import { YStack, XStack } from '@tamagui/stacks';
 import { Button } from '@tamagui/button';
@@ -25,7 +26,7 @@ export interface OrderCardProps {
 
 /**
  * Reusable Order Card Component
- * Used in Ready for Delivery and other order listing screens
+ * Enhanced with improved touch targets, visual hierarchy, and accessibility
  */
 export function OrderCard({
   orderId,
@@ -51,147 +52,210 @@ export function OrderCard({
       backgroundColor={DesignTokens.colors.background.card}
       borderRadius="md"
       shadow="md"
+      style={{
+        shadowColor: DesignTokens.colors.brown[900],
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 8,
+        elevation: 3,
+      }}
     >
-      <YStack space="$2">
-        {/* Order Header */}
+      <YStack space="$4">
+        {/* Order Header - Enhanced visual hierarchy */}
         <XStack justifyContent="space-between" alignItems="center">
-          <XStack space="$2" alignItems="center">
+          <YStack space="$1" flex={1}>
             <Text
-              fontSize={DesignTokens.typography.fontSize.lg}
-              fontWeight={DesignTokens.typography.fontWeight.bold}
+              fontSize={18}
+              fontWeight="700"
               color={DesignTokens.colors.brown[900]}
             >
               {orderId}
             </Text>
             <Text
-              fontSize={DesignTokens.typography.fontSize.sm}
+              fontSize={13}
               color={DesignTokens.colors.lightBrown[500]}
+              fontWeight="500"
             >
               {timeAgo}
             </Text>
-          </XStack>
+          </YStack>
           <XStack space="$2">
             <YStack
               backgroundColor={DesignTokens.colors.teal[500]}
-              borderRadius={DesignTokens.radius.full}
-              width={32}
-              height={32}
+              borderRadius={DesignTokens.radius.md}
+              width={48}
+              height={48}
               alignItems="center"
               justifyContent="center"
+              style={{
+                shadowColor: DesignTokens.colors.teal[500],
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.2,
+                shadowRadius: 4,
+                elevation: 2,
+              }}
             >
-              <Bike size={18} color="#FFFFFF" />
+              <Bike size={24} color="#FFFFFF" />
             </YStack>
             {isCOD && (
               <YStack
                 backgroundColor={DesignTokens.colors.orange[500]}
-                borderRadius={DesignTokens.radius.full}
-                width={32}
-                height={32}
+                borderRadius={DesignTokens.radius.md}
+                width={48}
+                height={48}
                 alignItems="center"
                 justifyContent="center"
+                style={{
+                  shadowColor: DesignTokens.colors.orange[500],
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.2,
+                  shadowRadius: 4,
+                  elevation: 2,
+                }}
               >
-                <Wallet size={18} color="#FFFFFF" />
+                <Wallet size={24} color="#FFFFFF" />
               </YStack>
             )}
           </XStack>
         </XStack>
 
-        {/* Customer Info */}
-        <YStack space="$1">
-          <XStack alignItems="center" space="$2">
+        {/* Customer Info - Improved layout */}
+        <YStack space="$3">
+          <XStack alignItems="center" space="$3" justifyContent="space-between">
             <Text
-              fontSize={DesignTokens.typography.fontSize.md}
-              fontWeight={DesignTokens.typography.fontWeight.semibold}
+              fontSize={16}
+              fontWeight="700"
               color={DesignTokens.colors.brown[900]}
+              flex={1}
             >
               {customerName}
             </Text>
-            {phoneNumber && (
-              <Phone
-                size={18}
-                color={DesignTokens.colors.semantic.success}
-                onPress={onCall}
-              />
+            {phoneNumber && onCall && (
+              <TouchableOpacity onPress={onCall} activeOpacity={0.7}>
+                <XStack
+                  width={48}
+                  height={48}
+                  borderRadius={DesignTokens.radius.md}
+                  backgroundColor={DesignTokens.colors.semantic.success}
+                  alignItems="center"
+                  justifyContent="center"
+                  style={{
+                    shadowColor: DesignTokens.colors.semantic.success,
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.2,
+                    shadowRadius: 4,
+                    elevation: 2,
+                  }}
+                >
+                  <Phone size={24} color="#FFFFFF" />
+                </XStack>
+              </TouchableOpacity>
             )}
           </XStack>
           {deliveryAddress && (
-            <XStack justifyContent="space-between" alignItems="center">
-              <Text
-                fontSize={DesignTokens.typography.fontSize.sm}
-                color={DesignTokens.colors.lightBrown[500]}
-                flex={1}
-              >
-                {deliveryAddress}
-              </Text>
-              {onViewMap && (
-                <XStack
-                  alignItems="center"
-                  space="$1"
-                  onPress={onViewMap}
-                  cursor="pointer"
+            <XStack justifyContent="space-between" alignItems="center" space="$2">
+              <XStack flex={1} alignItems="center" space="$2">
+                <MapPin size={16} color={DesignTokens.colors.lightBrown[500]} />
+                <Text
+                  fontSize={14}
+                  color={DesignTokens.colors.lightBrown[600]}
+                  flex={1}
+                  numberOfLines={2}
                 >
-                  <Text
-                    fontSize={DesignTokens.typography.fontSize.sm}
-                    color={DesignTokens.colors.teal[500]}
-                    fontWeight={DesignTokens.typography.fontWeight.semibold}
+                  {deliveryAddress}
+                </Text>
+              </XStack>
+              {onViewMap && (
+                <TouchableOpacity onPress={onViewMap} activeOpacity={0.7}>
+                  <XStack
+                    alignItems="center"
+                    space="$1"
+                    paddingHorizontal="$3"
+                    paddingVertical="$2"
+                    borderRadius={DesignTokens.radius.md}
+                    backgroundColor={DesignTokens.colors.teal[50]}
                   >
-                    Map
-                  </Text>
-                  <Send size={14} color={DesignTokens.colors.teal[500]} />
-                </XStack>
+                    <Text
+                      fontSize={13}
+                      color={DesignTokens.colors.teal[600]}
+                      fontWeight="700"
+                    >
+                      Map
+                    </Text>
+                    <Send size={14} color={DesignTokens.colors.teal[600]} />
+                  </XStack>
+                </TouchableOpacity>
               )}
             </XStack>
           )}
         </YStack>
 
-        {/* Order Details Grid */}
-        <XStack space="$4" flexWrap="wrap">
-          <YStack flex={1} minWidth="30%">
+        {/* Order Details Grid - Enhanced spacing */}
+        <XStack
+          space="$3"
+          paddingVertical="$3"
+          paddingHorizontal="$3"
+          backgroundColor={DesignTokens.colors.beige[50]}
+          borderRadius={DesignTokens.radius.md}
+        >
+          <YStack flex={1}>
             <Text
-              fontSize={DesignTokens.typography.fontSize.xs}
+              fontSize={12}
               color={DesignTokens.colors.lightBrown[500]}
+              fontWeight="600"
+              marginBottom="$1"
             >
               Payment
             </Text>
             <Text
-              fontSize={DesignTokens.typography.fontSize.sm}
-              fontWeight={DesignTokens.typography.fontWeight.bold}
+              fontSize={15}
+              fontWeight="700"
               color={
                 isCOD
-                  ? DesignTokens.colors.orange[500]
+                  ? DesignTokens.colors.orange[600]
                   : DesignTokens.colors.semantic.success
               }
             >
-              {isCOD ? 'COD: ' : 'Paid: '}
+              {isCOD ? 'COD' : 'Paid'}
+            </Text>
+            <Text
+              fontSize={16}
+              fontWeight="700"
+              color={DesignTokens.colors.brown[900]}
+            >
               {paymentAmount}
             </Text>
           </YStack>
-          <YStack flex={1} minWidth="30%">
+          <YStack flex={1}>
             <Text
-              fontSize={DesignTokens.typography.fontSize.xs}
+              fontSize={12}
               color={DesignTokens.colors.lightBrown[500]}
+              fontWeight="600"
+              marginBottom="$1"
             >
               Items
             </Text>
             <Text
-              fontSize={DesignTokens.typography.fontSize.sm}
-              fontWeight={DesignTokens.typography.fontWeight.bold}
+              fontSize={16}
+              fontWeight="700"
               color={DesignTokens.colors.brown[900]}
             >
-              {itemsCount} items
+              {itemsCount}
             </Text>
           </YStack>
           {estimatedDelivery && (
-            <YStack flex={1} minWidth="30%">
+            <YStack flex={1}>
               <Text
-                fontSize={DesignTokens.typography.fontSize.xs}
+                fontSize={12}
                 color={DesignTokens.colors.lightBrown[500]}
+                fontWeight="600"
+                marginBottom="$1"
               >
-                Est. Delivery
+                Est. Time
               </Text>
               <Text
-                fontSize={DesignTokens.typography.fontSize.sm}
-                fontWeight={DesignTokens.typography.fontWeight.bold}
+                fontSize={15}
+                fontWeight="700"
                 color={DesignTokens.colors.brown[900]}
               >
                 {estimatedDelivery}
@@ -200,35 +264,51 @@ export function OrderCard({
           )}
         </XStack>
 
-        {/* Special Instructions */}
+        {/* Special Instructions - Enhanced visibility */}
         {specialInstructions && (
-          <YStack space="$1">
+          <YStack
+            space="$2"
+            padding="$3"
+            backgroundColor={DesignTokens.colors.orange[50]}
+            borderRadius={DesignTokens.radius.md}
+            borderWidth={1}
+            borderColor={DesignTokens.colors.orange[200]}
+          >
             <Text
-              fontSize={DesignTokens.typography.fontSize.sm}
-              fontWeight={DesignTokens.typography.fontWeight.semibold}
-              color={DesignTokens.colors.brown[900]}
+              fontSize={13}
+              fontWeight="700"
+              color={DesignTokens.colors.orange[700]}
             >
-              Special Instructions:
+              Special Instructions
             </Text>
             <Text
-              fontSize={DesignTokens.typography.fontSize.sm}
-              color={DesignTokens.colors.brown[700]}
+              fontSize={14}
+              color={DesignTokens.colors.brown[800]}
+              fontStyle="italic"
+              lineHeight={20}
             >
-              {specialInstructions}
+              "{specialInstructions}"
             </Text>
           </YStack>
         )}
 
-        {/* Action Button */}
+        {/* Action Button - Enhanced touch target */}
         {showDeliveryActions && onPickUp && (
           <Button
             onPress={onPickUp}
             style={{
               backgroundColor: DesignTokens.colors.teal[500],
               width: '100%',
+              minHeight: 56,
+              borderRadius: 12,
+              shadowColor: DesignTokens.colors.teal[500],
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.3,
+              shadowRadius: 8,
+              elevation: 4,
             }}
           >
-            <Text color="#FFFFFF" fontWeight="600">
+            <Text color="#FFFFFF" fontWeight="700" fontSize={16} letterSpacing={0.5}>
               Pick Up & Start Delivery
             </Text>
           </Button>

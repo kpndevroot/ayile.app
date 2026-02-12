@@ -2,7 +2,7 @@ import { API_BASE_URL } from '@/constants/api';
 import { getAuthToken } from '@/utils/api';
 import { Order } from '@/types';
 
-export type WebSocketMessageType = 
+export type WebSocketMessageType =
   | 'connected'
   | 'order:created'
   | 'order:updated'
@@ -34,8 +34,8 @@ class WebSocketService {
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
   private reconnectDelay = 1000; // Start with 1 second
-  private reconnectTimer: NodeJS.Timeout | null = null;
-  private pingInterval: NodeJS.Timeout | null = null;
+  private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+  private pingInterval: ReturnType<typeof setInterval> | null = null;
   private messageHandlers: Set<MessageHandler> = new Set();
   private connectionStateHandlers: Set<ConnectionStateHandler> = new Set();
   private isConnecting = false;
@@ -47,15 +47,29 @@ class WebSocketService {
    * Connect to WebSocket server
    */
   async connect(): Promise<void> {
+    // Prevent multiple concurrent connection attempts
     if (this.isConnecting || this.isConnected) {
+      console.log('[WebSocket] Already connecting or connected, skipping');
       return;
+    }
+
+    // Clean up any existing connection first
+    if (this.ws) {
+      console.log('[WebSocket] Cleaning up existing connection');
+      try {
+        this.ws.close();
+      } catch (e) {
+        // Ignore errors during cleanup
+      }
+      this.ws = null;
     }
 
     try {
       this.isConnecting = true;
       const token = await getAuthToken();
-      
+
       if (!token) {
+        this.isConnecting = false;
         throw new Error('No authentication token available');
       }
 
@@ -63,6 +77,7 @@ class WebSocketService {
       const wsUrl = API_BASE_URL.replace('http://', 'ws://').replace('https://', 'wss://');
       const url = `${wsUrl}/api/orders/ws?token=${token}`;
 
+      console.log('[WebSocket] Connecting to:', wsUrl + '/api/orders/ws');
       this.ws = new WebSocket(url);
 
       this.ws.onopen = () => {
@@ -94,15 +109,28 @@ class WebSocketService {
 
       this.ws.onclose = (event) => {
         console.log('[WebSocket] Closed', event.code, event.reason);
+
+        // Clean up state
         this.isConnected = false;
         this.isConnecting = false;
+        this.ws = null;
+
         this.notifyConnectionState(false);
         this.stopPingInterval();
-        this.attemptReconnect();
+
+        // Only attempt reconnect if not an authentication error
+        // Code 1008 is used for authentication failures
+        if (event.code === 1008) {
+          console.error('[WebSocket] Authentication failed, not reconnecting');
+          this.reconnectAttempts = this.maxReconnectAttempts; // Prevent further reconnects
+        } else {
+          this.attemptReconnect();
+        }
       };
     } catch (error) {
       console.error('[WebSocket] Connection error:', error);
       this.isConnecting = false;
+      this.ws = null;
       this.attemptReconnect();
     }
   }

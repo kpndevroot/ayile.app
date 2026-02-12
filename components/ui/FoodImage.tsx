@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, StyleSheet, Image, ImageStyle, ViewStyle } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { DesignTokens } from '@/constants/design';
+import { getFullImageUrl } from '@/utils/imageUtils';
 
 interface FoodImageProps {
   imageUrl?: string | null;
@@ -51,7 +52,7 @@ export function FoodImage({
   // Image loaded successfully
   return (
     <Image
-      source={{ uri: imageUrl }}
+      source={{ uri: getFullImageUrl(imageUrl) || '' }}
       style={[
         {
           width,

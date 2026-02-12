@@ -7,6 +7,8 @@ export interface LocalCartItem {
   menuItemId: string;
   quantity: number;
   menuItem?: MenuItem; // Store full menu item for display
+  quantityOptionId?: string; // Track selected quantity option (e.g., Half, Full)
+  quantityLabel?: string; // Display label for the selected quantity option
 }
 
 /**

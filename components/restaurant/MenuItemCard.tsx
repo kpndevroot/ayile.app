@@ -6,6 +6,7 @@ import { Button } from '@tamagui/button';
 import * as LucideIcons from '@tamagui/lucide-icons';
 import { DesignTokens } from '@/constants/design';
 import { Badge } from '@/components/ui/Badge';
+import { getFullImageUrl } from '@/utils/imageUtils';
 
 interface MenuItemCardProps {
   item: {
@@ -44,7 +45,7 @@ export function MenuItemCard({
 
   const getCategoryIcon = (category: string) => {
     const categoryUpper = category.toUpperCase();
-    
+
     // Map categories to Lucide icons
     if (categoryUpper.includes('APPETIZER') || categoryUpper.includes('STARTER') || categoryUpper.includes('SNACK')) {
       return LucideIcons.Cookie;
@@ -122,7 +123,7 @@ export function MenuItemCard({
           >
             {item.imageUrl ? (
               <Image
-                source={{ uri: item.imageUrl }}
+                source={{ uri: getFullImageUrl(item.imageUrl) || '' }}
                 style={styles.image}
                 resizeMode="cover"
               />

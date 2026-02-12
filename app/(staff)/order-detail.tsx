@@ -196,158 +196,233 @@ export default function OrderDetailScreen() {
 
       <ScrollView showsVerticalScrollIndicator={false}>
         <YStack padding="$4" space="$4">
-          {/* Status Progress Bar */}
-          <XStack
-            justifyContent="space-between"
-            alignItems="center"
-            paddingVertical="$4"
+          {/* Status Progress Bar - Enhanced for accessibility and visual hierarchy */}
+          <YStack
+            backgroundColor={DesignTokens.colors.neutral.white}
+            borderRadius="$4"
+            padding="$5"
+            marginBottom="$2"
+            style={{
+              shadowColor: DesignTokens.colors.brown[900],
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.05,
+              shadowRadius: 8,
+              elevation: 2,
+            }}
           >
-            {statusSteps.map((status, index) => {
-              const isActive = index <= currentStatusIndex;
-              const isCurrent = index === currentStatusIndex;
-              const isCompleted = index < currentStatusIndex;
-
-              // Icon selection based on status
-              const getIcon = () => {
-                if (isCompleted) return <Check size={12} color={DesignTokens.colors.neutral.white} />;
-                if (isCurrent) {
-                  switch (status) {
-                    case 'PENDING': return <Clock size={12} color={DesignTokens.colors.neutral.white} />;
-                    case 'CONFIRMED': return <Check size={12} color={DesignTokens.colors.neutral.white} />;
-                    case 'PREPARING': return <ChefHat size={12} color={DesignTokens.colors.neutral.white} />;
-                    case 'READY': return <ShoppingBag size={12} color={DesignTokens.colors.neutral.white} />;
-                    case 'DELIVERED': return <Check size={12} color={DesignTokens.colors.neutral.white} />;
-                    default: return <Circle size={8} fill={DesignTokens.colors.neutral.white} />;
-                  }
-                }
-                return null;
-              };
-
-              return (
-                <XStack key={status} flex={1} alignItems="center">
-                  <XStack alignItems="center" flex={1}>
-                    {/* Line before dot */
-                      index > 0 && (
-                        <XStack
-                          flex={1}
-                          height={3}
-                          backgroundColor={
-                            isActive
-                              ? DesignTokens.colors.orange[500]
-                              : DesignTokens.colors.beige[300]
-                          }
-                        />
-                      )}
-
-                    {/* Dot/Icon */}
-                    <YStack
-                      width={isCurrent ? 32 : 24}
-                      height={isCurrent ? 32 : 24}
-                      borderRadius={DesignTokens.radius.full}
-                      backgroundColor={
-                        isActive
-                          ? DesignTokens.colors.orange[500]
-                          : DesignTokens.colors.beige[300]
-                      }
-                      alignItems="center"
-                      justifyContent="center"
-                      zIndex={1}
-                      shadowColor={isCurrent ? DesignTokens.colors.orange[300] : undefined}
-                      shadowRadius={isCurrent ? 4 : 0}
-                      shadowOpacity={isCurrent ? 0.5 : 0}
-                    >
-                      {getIcon()}
-                    </YStack>
-
-                    {/* Line after dot */
-                      index < statusSteps.length - 1 && (
-                        <XStack
-                          flex={1}
-                          height={3}
-                          backgroundColor={
-                            index < currentStatusIndex // Only colored if NEXT step is also active/reached? No, standard logic
-                              ? DesignTokens.colors.orange[500]
-                              : DesignTokens.colors.beige[300]
-                          }
-                        />
-                      )}
-                  </XStack>
-
-                  {/* Label */}
-                  <YStack
-                    position="absolute"
-                    top={isCurrent ? 38 : 34}
-                    width={70}
-                    alignItems="center"
-                    left={statusSteps.length > 4 ? -22 : -10} // dynamic adjust for density
-                  >
-                    <Text
-                      fontSize={isCurrent ? 11 : 10}
-                      fontWeight={isCurrent ? '700' : '500'}
-                      color={
-                        isCurrent
-                          ? DesignTokens.colors.orange[600]
-                          : isActive
-                            ? DesignTokens.colors.brown[700]
-                            : DesignTokens.colors.beige[500]
-                      }
-                      textTransform="capitalize"
-                      textAlign="center"
-                      numberOfLines={2}
-                    >
-                      {status.toLowerCase().replace(/_/g, ' ')}
-                    </Text>
-                  </YStack>
-                </XStack>
-              );
-            })}
-          </XStack>
-
-          {/* Customer Info Section */}
-          <YStack space="$3" paddingHorizontal="$2">
-            <Text
-              fontSize={DesignTokens.typography.fontSize.lg}
-              fontWeight={DesignTokens.typography.fontWeight.bold}
-              color={DesignTokens.colors.brown[900]}
-              marginBottom="$1"
+            <XStack
+              justifyContent="space-between"
+              alignItems="center"
+              paddingVertical="$3"
             >
-              Customer Info
+              {statusSteps.map((status, index) => {
+                const isActive = index <= currentStatusIndex;
+                const isCurrent = index === currentStatusIndex;
+                const isCompleted = index < currentStatusIndex;
+
+                // Icon selection based on status - larger icons for better visibility
+                const getIcon = () => {
+                  const iconSize = isCurrent ? 20 : 16;
+                  if (isCompleted) return <Check size={iconSize} color={DesignTokens.colors.neutral.white} strokeWidth={3} />;
+                  if (isCurrent) {
+                    switch (status) {
+                      case 'PENDING': return <Clock size={iconSize} color={DesignTokens.colors.neutral.white} />;
+                      case 'CONFIRMED': return <Check size={iconSize} color={DesignTokens.colors.neutral.white} />;
+                      case 'PREPARING': return <ChefHat size={iconSize} color={DesignTokens.colors.neutral.white} />;
+                      case 'READY': return <ShoppingBag size={iconSize} color={DesignTokens.colors.neutral.white} />;
+                      case 'DELIVERED': return <Check size={iconSize} color={DesignTokens.colors.neutral.white} />;
+                      default: return <Circle size={12} fill={DesignTokens.colors.neutral.white} />;
+                    }
+                  }
+                  return null;
+                };
+
+                return (
+                  <XStack key={status} flex={1} alignItems="center">
+                    <XStack alignItems="center" flex={1}>
+                      {/* Line before dot */
+                        index > 0 && (
+                          <XStack
+                            flex={1}
+                            height={4}
+                            backgroundColor={
+                              isActive
+                                ? DesignTokens.colors.orange[500]
+                                : DesignTokens.colors.beige[300]
+                            }
+                            borderRadius="$2"
+                          />
+                        )}
+
+                      {/* Dot/Icon - Increased size for better touch targets (48-56px) */}
+                      <YStack
+                        width={isCurrent ? 56 : 48}
+                        height={isCurrent ? 56 : 48}
+                        borderRadius={DesignTokens.radius.full}
+                        backgroundColor={
+                          isActive
+                            ? DesignTokens.colors.orange[500]
+                            : DesignTokens.colors.beige[300]
+                        }
+                        alignItems="center"
+                        justifyContent="center"
+                        zIndex={1}
+                        borderWidth={isCurrent ? 3 : 0}
+                        borderColor={DesignTokens.colors.orange[200]}
+                        style={{
+                          shadowColor: isCurrent ? DesignTokens.colors.orange[500] : undefined,
+                          shadowOffset: { width: 0, height: 4 },
+                          shadowRadius: isCurrent ? 8 : 0,
+                          shadowOpacity: isCurrent ? 0.3 : 0,
+                          elevation: isCurrent ? 4 : 0,
+                        }}
+                      >
+                        {getIcon()}
+                      </YStack>
+
+                      {/* Line after dot */
+                        index < statusSteps.length - 1 && (
+                          <XStack
+                            flex={1}
+                            height={4}
+                            backgroundColor={
+                              index < currentStatusIndex
+                                ? DesignTokens.colors.orange[500]
+                                : DesignTokens.colors.beige[300]
+                            }
+                            borderRadius="$2"
+                          />
+                        )}
+                    </XStack>
+
+                    {/* Label - Improved positioning and typography */}
+                    <YStack
+                      position="absolute"
+                      top={isCurrent ? 64 : 56}
+                      width={80}
+                      alignItems="center"
+                      left={statusSteps.length > 4 ? -26 : -16}
+                    >
+                      <Text
+                        fontSize={isCurrent ? 13 : 11}
+                        fontWeight={isCurrent ? '700' : '600'}
+                        color={
+                          isCurrent
+                            ? DesignTokens.colors.orange[600]
+                            : isActive
+                              ? DesignTokens.colors.brown[700]
+                              : DesignTokens.colors.beige[500]
+                        }
+                        textTransform="capitalize"
+                        textAlign="center"
+                        numberOfLines={2}
+                      >
+                        {status.toLowerCase().replace(/_/g, ' ')}
+                      </Text>
+                    </YStack>
+                  </XStack>
+                );
+              })}
+            </XStack>
+          </YStack>
+
+          {/* Customer Info Section - Enhanced with better spacing and visual hierarchy */}
+          <YStack space="$2">
+            <Text
+              fontSize={DesignTokens.typography.fontSize.md}
+              fontWeight="700"
+              color={DesignTokens.colors.brown[700]}
+              marginBottom="$1"
+              paddingHorizontal="$1"
+            >
+              Customer Details
             </Text>
             <YStack
               backgroundColor={DesignTokens.colors.neutral.white}
               borderRadius="$4"
               padding="$4"
+              space="$4"
+              style={{
+                shadowColor: DesignTokens.colors.brown[900],
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.05,
+                shadowRadius: 8,
+                elevation: 2,
+              }}
             >
-              <YStack space="$4">
-                <XStack justifyContent="space-between" alignItems="center">
-                  <Text fontSize={DesignTokens.typography.fontSize.sm} color={DesignTokens.colors.lightBrown[500]}>Name</Text>
-                  <Text fontSize={DesignTokens.typography.fontSize.md} fontWeight="600" color={DesignTokens.colors.brown[900]}>{customer.name}</Text>
+              <XStack alignItems="center" space="$3">
+                <YStack
+                  width={40}
+                  height={40}
+                  borderRadius="$3"
+                  backgroundColor={DesignTokens.colors.orange[100]}
+                  alignItems="center"
+                  justifyContent="center"
+                >
+                  <Text fontSize={18} fontWeight="700" color={DesignTokens.colors.orange[600]}>
+                    {customer.name.charAt(0).toUpperCase()}
+                  </Text>
+                </YStack>
+                <YStack flex={1}>
+                  <Text fontSize={16} fontWeight="700" color={DesignTokens.colors.brown[900]}>
+                    {customer.name}
+                  </Text>
+                </YStack>
+              </XStack>
+
+              <XStack height={1} backgroundColor={DesignTokens.colors.beige[200]} />
+
+              <TouchableOpacity activeOpacity={0.7}>
+                <XStack alignItems="center" space="$3" paddingVertical="$1">
+                  <YStack
+                    width={40}
+                    height={40}
+                    borderRadius="$3"
+                    backgroundColor={DesignTokens.colors.orange[50]}
+                    alignItems="center"
+                    justifyContent="center"
+                  >
+                    <Phone size={20} color={DesignTokens.colors.orange[600]} />
+                  </YStack>
+                  <Text fontSize={15} fontWeight="600" color={DesignTokens.colors.brown[900]} flex={1}>
+                    {customer.phone}
+                  </Text>
                 </XStack>
-                <XStack justifyContent="space-between" alignItems="center">
-                  <Text fontSize={DesignTokens.typography.fontSize.sm} color={DesignTokens.colors.lightBrown[500]}>Phone</Text>
-                  <XStack alignItems="center" space="$2">
-                    <Text fontSize={DesignTokens.typography.fontSize.md} fontWeight="600" color={DesignTokens.colors.brown[900]}>{customer.phone}</Text>
-                    <Phone size={16} color={DesignTokens.colors.orange[500]} />
-                  </XStack>
-                </XStack>
-                <XStack justifyContent="space-between" alignItems="flex-start">
-                  <Text fontSize={DesignTokens.typography.fontSize.sm} color={DesignTokens.colors.lightBrown[500]}>{order.table ? 'Table' : 'Address'}</Text>
-                  <XStack alignItems="center" space="$2" flex={1} justifyContent="flex-end">
-                    <Text fontSize={DesignTokens.typography.fontSize.md} fontWeight="600" color={DesignTokens.colors.brown[900]} textAlign="right" numberOfLines={2} style={{ maxWidth: '80%' }}>{customer.address}</Text>
-                    {!order.table && <MapPin size={16} color={DesignTokens.colors.orange[500]} />}
-                  </XStack>
-                </XStack>
-              </YStack>
+              </TouchableOpacity>
+
+              <XStack height={1} backgroundColor={DesignTokens.colors.beige[200]} />
+
+              <XStack alignItems="center" space="$3" paddingVertical="$1">
+                <YStack
+                  width={40}
+                  height={40}
+                  borderRadius="$3"
+                  backgroundColor={DesignTokens.colors.orange[50]}
+                  alignItems="center"
+                  justifyContent="center"
+                >
+                  <MapPin size={20} color={DesignTokens.colors.orange[600]} />
+                </YStack>
+                <YStack flex={1}>
+                  <Text fontSize={12} fontWeight="600" color={DesignTokens.colors.lightBrown[500]} marginBottom="$1">
+                    {order.table ? 'Table Number' : 'Delivery Address'}
+                  </Text>
+                  <Text fontSize={15} fontWeight="600" color={DesignTokens.colors.brown[900]}>
+                    {customer.address}
+                  </Text>
+                </YStack>
+              </XStack>
             </YStack>
           </YStack>
 
-          {/* Order Items Section */}
-          <YStack space="$3" paddingHorizontal="$2">
+          {/* Order Items Section - Enhanced with better visual hierarchy */}
+          <YStack space="$2">
             <Text
-              fontSize={DesignTokens.typography.fontSize.lg}
-              fontWeight={DesignTokens.typography.fontWeight.bold}
-              color={DesignTokens.colors.brown[900]}
+              fontSize={DesignTokens.typography.fontSize.md}
+              fontWeight="700"
+              color={DesignTokens.colors.brown[700]}
               marginBottom="$1"
+              paddingHorizontal="$1"
             >
               Order Items
             </Text>
@@ -355,120 +430,155 @@ export default function OrderDetailScreen() {
               backgroundColor={DesignTokens.colors.neutral.white}
               borderRadius="$4"
               padding="$4"
+              space="$3"
+              style={{
+                shadowColor: DesignTokens.colors.brown[900],
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.05,
+                shadowRadius: 8,
+                elevation: 2,
+              }}
             >
-              <YStack space="$4">
-                {items.map((item: any, index: number) => (
-                  <YStack key={index} space="$2">
-                    <XStack justifyContent="space-between" alignItems="flex-start">
-                      <XStack flex={1} space="$2">
-                        <Text fontWeight="bold" color={DesignTokens.colors.orange[600]}>{item.quantity}x</Text>
-                        <YStack flex={1}>
-                          <Text fontSize={DesignTokens.typography.fontSize.md} fontWeight="600" color={DesignTokens.colors.brown[900]}>{item.name}</Text>
-                          {item.modifications && (
-                            <YStack marginTop="$1">
-                              {item.modifications.map((mod: string, modIndex: number) => (
-                                <Text key={modIndex} fontSize={DesignTokens.typography.fontSize.sm} color={DesignTokens.colors.lightBrown[500]}>
-                                  {mod}
-                                </Text>
-                              ))}
-                            </YStack>
-                          )}
-                        </YStack>
-                      </XStack>
-                      <Text fontSize={DesignTokens.typography.fontSize.md} fontWeight="600" color={DesignTokens.colors.brown[900]}>{item.price}</Text>
+              {items.map((item: any, index: number) => (
+                <YStack key={index}>
+                  <XStack justifyContent="space-between" alignItems="flex-start" space="$3">
+                    <XStack flex={1} space="$3" alignItems="flex-start">
+                      <YStack
+                        minWidth={32}
+                        height={32}
+                        borderRadius="$2"
+                        backgroundColor={DesignTokens.colors.orange[500]}
+                        alignItems="center"
+                        justifyContent="center"
+                      >
+                        <Text fontSize={14} fontWeight="700" color={DesignTokens.colors.neutral.white}>
+                          {item.quantity}
+                        </Text>
+                      </YStack>
+                      <YStack flex={1}>
+                        <Text fontSize={15} fontWeight="700" color={DesignTokens.colors.brown[900]} marginBottom="$1">
+                          {item.name}
+                        </Text>
+                        {item.modifications && (
+                          <YStack marginTop="$1" space="$1">
+                            {item.modifications.map((mod: string, modIndex: number) => (
+                              <Text key={modIndex} fontSize={13} color={DesignTokens.colors.lightBrown[500]} fontStyle="italic">
+                                • {mod}
+                              </Text>
+                            ))}
+                          </YStack>
+                        )}
+                      </YStack>
                     </XStack>
-                    {index < items.length - 1 && <XStack height={1} backgroundColor={DesignTokens.colors.beige[200]} />}
-                  </YStack>
-                ))}
-              </YStack>
+                    <Text fontSize={16} fontWeight="700" color={DesignTokens.colors.orange[600]}>
+                      {item.price}
+                    </Text>
+                  </XStack>
+                  {index < items.length - 1 && <XStack height={1} backgroundColor={DesignTokens.colors.beige[200]} marginTop="$3" />}
+                </YStack>
+              ))}
             </YStack>
           </YStack>
 
-          {/* Special Instructions Section */}
+          {/* Special Instructions Section - Enhanced visual treatment */}
           {order.specialInstructions && (
-            <YStack space="$3" paddingHorizontal="$2">
+            <YStack space="$2">
               <Text
-                fontSize={DesignTokens.typography.fontSize.lg}
-                fontWeight={DesignTokens.typography.fontWeight.bold}
-                color={DesignTokens.colors.brown[900]}
+                fontSize={DesignTokens.typography.fontSize.md}
+                fontWeight="700"
+                color={DesignTokens.colors.brown[700]}
                 marginBottom="$1"
+                paddingHorizontal="$1"
               >
                 Special Instructions
               </Text>
               <YStack
-                backgroundColor={DesignTokens.colors.neutral.white}
+                backgroundColor={DesignTokens.colors.orange[50]}
                 borderRadius="$4"
                 padding="$4"
+                borderWidth={1}
+                borderColor={DesignTokens.colors.orange[200]}
+                style={{
+                  shadowColor: DesignTokens.colors.orange[300],
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.1,
+                  shadowRadius: 4,
+                  elevation: 1,
+                }}
               >
-                <Text fontSize={DesignTokens.typography.fontSize.md} color={DesignTokens.colors.brown[700]} fontStyle="italic">
+                <Text fontSize={15} color={DesignTokens.colors.brown[800]} fontStyle="italic" lineHeight={22}>
                   "{order.specialInstructions}"
                 </Text>
               </YStack>
             </YStack>
           )}
 
-          {/* Pricing Section */}
-          <YStack space="$3" paddingHorizontal="$2" marginTop="$2">
+          {/* Pricing Section - Enhanced visual hierarchy */}
+          <YStack space="$2">
             <Text
-              fontSize={DesignTokens.typography.fontSize.lg}
-              fontWeight={DesignTokens.typography.fontWeight.bold}
-              color={DesignTokens.colors.brown[900]}
+              fontSize={DesignTokens.typography.fontSize.md}
+              fontWeight="700"
+              color={DesignTokens.colors.brown[700]}
               marginBottom="$1"
+              paddingHorizontal="$1"
             >
-              Payment Details
+              Payment Summary
             </Text>
             <YStack
               backgroundColor={DesignTokens.colors.neutral.white}
               borderRadius="$4"
               padding="$4"
+              space="$3"
+              style={{
+                shadowColor: DesignTokens.colors.brown[900],
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.05,
+                shadowRadius: 8,
+                elevation: 2,
+              }}
             >
               <YStack space="$3">
-                <XStack justifyContent="space-between">
-                  <Text color={DesignTokens.colors.lightBrown[500]}>Subtotal</Text>
-                  <Text color={DesignTokens.colors.brown[900]}>{pricing.subtotal}</Text>
-                </XStack>
-                <XStack justifyContent="space-between">
-                  <Text color={DesignTokens.colors.lightBrown[500]}>Taxes & Charges</Text>
-                  <Text color={DesignTokens.colors.brown[900]}>{pricing.taxes}</Text>
-                </XStack>
-                <XStack justifyContent="space-between">
-                  <Text color={DesignTokens.colors.lightBrown[500]}>Delivery Fee</Text>
-                  <Text color={DesignTokens.colors.brown[900]}>{pricing.deliveryFee}</Text>
-                </XStack>
-
-                <XStack height={1} backgroundColor={DesignTokens.colors.beige[300]} marginVertical="$2" style={{ borderStyle: 'dashed', borderWidth: 1, borderColor: DesignTokens.colors.beige[300] }} />
-
                 <XStack justifyContent="space-between" alignItems="center">
-                  <Text fontSize={DesignTokens.typography.fontSize.lg} fontWeight="bold" color={DesignTokens.colors.brown[900]}>Total</Text>
-                  <Text fontSize={DesignTokens.typography.fontSize.xl} fontWeight="bold" color={DesignTokens.colors.orange[600]}>{pricing.total}</Text>
+                  <Text fontSize={14} color={DesignTokens.colors.lightBrown[500]}>Subtotal</Text>
+                  <Text fontSize={15} fontWeight="600" color={DesignTokens.colors.brown[900]}>{pricing.subtotal}</Text>
+                </XStack>
+                <XStack justifyContent="space-between" alignItems="center">
+                  <Text fontSize={14} color={DesignTokens.colors.lightBrown[500]}>Taxes & Charges</Text>
+                  <Text fontSize={15} fontWeight="600" color={DesignTokens.colors.brown[900]}>{pricing.taxes}</Text>
+                </XStack>
+                <XStack justifyContent="space-between" alignItems="center">
+                  <Text fontSize={14} color={DesignTokens.colors.lightBrown[500]}>Delivery Fee</Text>
+                  <Text fontSize={15} fontWeight="600" color={DesignTokens.colors.brown[900]}>{pricing.deliveryFee}</Text>
                 </XStack>
 
-                {/* Payment Status Section */}
-                <YStack marginTop="$3" space="$2">
-                  <Text 
-                    fontSize={DesignTokens.typography.fontSize.sm} 
-                    color={DesignTokens.colors.lightBrown[500]}
-                    fontWeight="500"
-                  >
-                    Payment Status
-                  </Text>
+                <XStack height={1} backgroundColor={DesignTokens.colors.beige[300]} marginVertical="$1" />
+
+                <XStack justifyContent="space-between" alignItems="center" paddingTop="$1">
+                  <Text fontSize={18} fontWeight="700" color={DesignTokens.colors.brown[900]}>Total Amount</Text>
+                  <Text fontSize={24} fontWeight="700" color={DesignTokens.colors.orange[600]}>{pricing.total}</Text>
+                </XStack>
+
+                {/* Payment Status Section - Enhanced with better touch targets */}
+                <YStack marginTop="$4" space="$2">
                   <TouchableOpacity
                     onPress={handleTogglePaymentStatus}
-                    activeOpacity={0.8}
+                    activeOpacity={0.7}
                   >
                     <XStack
+                      minHeight={64}
                       backgroundColor={isPaid ? '#ECFDF5' : '#FFF7ED'}
-                      padding="$4"
-                      borderRadius="$3"
+                      paddingHorizontal="$4"
+                      paddingVertical="$3"
+                      borderRadius="$4"
                       alignItems="center"
                       justifyContent="space-between"
                       borderWidth={2}
-                      borderColor={isPaid ? DesignTokens.colors.semantic.success : DesignTokens.colors.orange[300]}
+                      borderColor={isPaid ? DesignTokens.colors.semantic.success : DesignTokens.colors.orange[400]}
                       style={{
                         shadowColor: isPaid ? DesignTokens.colors.semantic.success : DesignTokens.colors.orange[500],
-                        shadowOffset: { width: 0, height: 2 },
-                        shadowOpacity: 0.1,
-                        shadowRadius: 4,
+                        shadowOffset: { width: 0, height: 3 },
+                        shadowOpacity: 0.15,
+                        shadowRadius: 6,
                         elevation: 3,
                       }}
                     >
@@ -476,49 +586,50 @@ export default function OrderDetailScreen() {
                         <YStack
                           width={48}
                           height={48}
-                          borderRadius={24}
-                          backgroundColor={isPaid ? DesignTokens.colors.semantic.success : DesignTokens.colors.orange[100]}
+                          borderRadius="$4"
+                          backgroundColor={isPaid ? DesignTokens.colors.semantic.success : DesignTokens.colors.orange[500]}
                           alignItems="center"
                           justifyContent="center"
                         >
                           {isPaid ? (
-                            <Check size={24} color="#FFFFFF" strokeWidth={3} />
+                            <Check size={28} color="#FFFFFF" strokeWidth={3} />
                           ) : (
-                            <CreditCard size={24} color={DesignTokens.colors.orange[600]} />
+                            <CreditCard size={28} color="#FFFFFF" />
                           )}
                         </YStack>
                         <YStack flex={1} space="$1">
-                          <Text 
-                            fontSize={DesignTokens.typography.fontSize.md} 
-                            color={isPaid ? DesignTokens.colors.semantic.success : DesignTokens.colors.orange[700]} 
+                          <Text
+                            fontSize={16}
+                            color={isPaid ? DesignTokens.colors.semantic.success : DesignTokens.colors.orange[800]}
                             fontWeight="700"
                           >
                             {paymentStatusText}
                           </Text>
-                          <Text 
-                            fontSize={DesignTokens.typography.fontSize.xs} 
-                            color={isPaid ? DesignTokens.colors.semantic.success : DesignTokens.colors.orange[600]} 
-                            fontWeight="400"
+                          <Text
+                            fontSize={13}
+                            color={isPaid ? DesignTokens.colors.semantic.success : DesignTokens.colors.orange[700]}
+                            fontWeight="500"
                           >
-                            {isPaid ? 'Payment received' : 'Tap to mark as paid'}
+                            {isPaid ? 'Payment received successfully' : 'Tap to mark as paid'}
                           </Text>
                         </YStack>
                       </XStack>
                       <YStack
-                        backgroundColor={isPaid ? DesignTokens.colors.semantic.success : DesignTokens.colors.orange[500]}
-                        paddingHorizontal="$3"
+                        backgroundColor={isPaid ? DesignTokens.colors.semantic.success : DesignTokens.colors.orange[600]}
+                        paddingHorizontal="$4"
                         paddingVertical="$2"
-                        borderRadius="$2"
-                        minWidth={80}
+                        borderRadius="$3"
+                        minWidth={90}
                         alignItems="center"
                         justifyContent="center"
                       >
-                        <Text 
-                          fontSize={DesignTokens.typography.fontSize.sm} 
-                          color="#FFFFFF" 
+                        <Text
+                          fontSize={13}
+                          color="#FFFFFF"
                           fontWeight="700"
+                          letterSpacing={0.5}
                         >
-                          {isPaid ? 'PAID' : 'MARK AS PAID'}
+                          {isPaid ? 'PAID' : 'MARK PAID'}
                         </Text>
                       </YStack>
                     </XStack>
@@ -530,40 +641,64 @@ export default function OrderDetailScreen() {
         </YStack>
       </ScrollView >
 
-      {/* Action Buttons */}
-      {/* only show update status button if order is not delivered */}
+      {/* Action Buttons - Enhanced with better touch targets and visual prominence */}
       {order.status !== 'DELIVERED' && (
-      < YStack
-        padding="$4"
-        paddingBottom={insets.bottom + 16}
-        space="$2"
-        backgroundColor={DesignTokens.colors.background.light}
-      >
-        <Button
-          onPress={() => setShowStatusModal(true)}
-          variant="primary"
-          fullWidth
+        <YStack
+          padding="$4"
+          paddingBottom={insets.bottom + 16}
+          space="$4"
+          backgroundColor={DesignTokens.colors.background.light}
+          borderTopWidth={1}
+          borderTopColor={DesignTokens.colors.beige[200]}
           style={{
-            backgroundColor: DesignTokens.colors.orange[500],
+            shadowColor: DesignTokens.colors.brown[900],
+            shadowOffset: { width: 0, height: -2 },
+            shadowOpacity: 0.05,
+            shadowRadius: 8,
+            elevation: 4,
           }}
         >
-          Update Status
-        </Button>
-        <Button
-          onPress={handleCancelOrder}
-          variant="outline"
-          fullWidth
-          style={{
-            borderColor: DesignTokens.colors.semantic.error,
-            backgroundColor: DesignTokens.colors.neutral.white,
-            shadowColor: 'transparent',
-            shadowOpacity: 0,
-            elevation: 0,
-          }}
-        >
-          <Text color={DesignTokens.colors.semantic.error}>Cancel Order</Text>
-        </Button>
-      </YStack >
+          <Button
+            onPress={() => setShowStatusModal(true)}
+            variant="primary"
+            fullWidth
+            style={{
+              backgroundColor: DesignTokens.colors.orange[500],
+              minHeight: 56,
+              borderRadius: 12,
+              shadowColor: DesignTokens.colors.orange[500],
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.3,
+              shadowRadius: 8,
+              elevation: 4,
+            }}
+          >
+            <Text fontSize={16} fontWeight="700" color="#FFFFFF" letterSpacing={0.5}>
+              Update Order Status
+            </Text>
+          </Button>
+          <Button
+            onPress={handleCancelOrder}
+            variant="outline"
+            fullWidth
+            style={{
+              borderColor: DesignTokens.colors.semantic.error,
+              backgroundColor: DesignTokens.colors.neutral.white,
+              minHeight: 56,
+              borderRadius: 12,
+              borderWidth: 2,
+              shadowColor: DesignTokens.colors.semantic.error,
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.1,
+              shadowRadius: 4,
+              elevation: 2,
+            }}
+          >
+            <Text fontSize={16} fontWeight="700" color={DesignTokens.colors.semantic.error} letterSpacing={0.5}>
+              Cancel Order
+            </Text>
+          </Button>
+        </YStack>
       )}
       {/* Update Status Modal */}
       < UpdateOrderStatusModal

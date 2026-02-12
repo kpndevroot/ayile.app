@@ -43,6 +43,29 @@ export interface Table {
   seats?: number;
 }
 
+/**
+ * Format relative time from a date
+ * Returns human-readable format: "Just now", "30s ago", "5m ago", "2h ago", "3d ago", "2mo ago", "1y ago"
+ */
+function formatTimeAgo(date: Date): string {
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffSeconds = Math.floor(diffMs / 1000);
+  const diffMinutes = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+  const diffMonths = Math.floor(diffDays / 30);
+  const diffYears = Math.floor(diffDays / 365);
+
+  if (diffSeconds < 10) return 'Just now';
+  if (diffSeconds < 60) return `${diffSeconds}s ago`;
+  if (diffMinutes < 60) return `${diffMinutes}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays < 30) return `${diffDays}d ago`;
+  if (diffMonths < 12) return `${diffMonths}mo ago`;
+  return `${diffYears}y ago`;
+}
+
 export class StaffService {
   /**
    * Get staff user's restaurant ID
@@ -218,11 +241,8 @@ export class StaffService {
       });
 
       return orders.map((order: any) => {
-        const now = new Date();
         const createdAt = new Date(order.createdAt);
-        const diffMs = now.getTime() - createdAt.getTime();
-        const diffMins = Math.floor(diffMs / 60000);
-        const timeAgo = diffMins < 1 ? 'Just now' : `${diffMins}m ago`;
+        const timeAgo = formatTimeAgo(createdAt);
 
         // Determine location
         let location = 'Takeaway';
@@ -347,7 +367,7 @@ export class StaffService {
   static async updatePaymentStatus(orderId: string, isPaid: boolean): Promise<void> {
     try {
       const paymentStatus = isPaid ? 'COMPLETED' : 'PENDING';
-      
+
       const response = await authenticatedFetch(
         `${API_BASE_URL}${API_ENDPOINTS.ORDERS.UPDATE_PAYMENT_STATUS(orderId)}`,
         {
@@ -399,11 +419,8 @@ export class StaffService {
       const orders = data.orders || [];
 
       return orders.map((order: any) => {
-        const now = new Date();
         const createdAt = new Date(order.createdAt);
-        const diffMs = now.getTime() - createdAt.getTime();
-        const diffMins = Math.floor(diffMs / 60000);
-        const timeAgo = diffMins < 1 ? 'Just now' : `${diffMins}m ago`;
+        const timeAgo = formatTimeAgo(createdAt);
 
         let location = 'Takeaway';
         if (order.table?.tableNumber) {
@@ -462,11 +479,8 @@ export class StaffService {
       const orders = data.orders || [];
 
       return orders.map((order: any) => {
-        const now = new Date();
         const createdAt = new Date(order.createdAt);
-        const diffMs = now.getTime() - createdAt.getTime();
-        const diffMins = Math.floor(diffMs / 60000);
-        const timeAgo = diffMins < 1 ? 'Just now' : `${diffMins}m ago`;
+        const timeAgo = formatTimeAgo(createdAt);
 
         return {
           orderId: order.orderNumber,

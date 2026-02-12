@@ -20,6 +20,9 @@ import { API_BASE_URL, API_ENDPOINTS } from '@/constants/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import { TopBar } from '@/components/ui/TopBar';
+import { MenuItemCard } from '@/components/home/MenuItemCard';
+import { BestsellerCard } from '@/components/home/BestsellerCard';
+import { DesignTokens } from '@/constants/design';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -305,7 +308,7 @@ export function HomePage({
         <YStack
           paddingHorizontal={20}
           paddingTop={Platform.OS === 'ios' ? 60 : 20}
-          paddingBottom={16}
+          paddingBottom={24}
         >
           <TopBar
             userName={userData ? `${userData.firstName} ${userData.lastName}` : 'Customer'}
@@ -323,27 +326,27 @@ export function HomePage({
             gap={12}
             style={styles.searchBar}
           >
-            <MaterialIcons name="search" size={20} color="#6B7280" />
+            <MaterialIcons name="search" size={20} color={DesignTokens.colors.charcoal[500]} />
             <TextInput
               style={styles.searchInput}
               placeholder="Search food, drinks, etc."
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor={DesignTokens.colors.charcoal[400]}
               value={searchQuery}
               onChangeText={setSearchQuery}
             />
             <TouchableOpacity>
-              <MaterialIcons name="mic" size={20} color="#6B7280" />
+              <MaterialIcons name="mic" size={20} color={DesignTokens.colors.charcoal[500]} />
             </TouchableOpacity>
           </XStack>
         </YStack>
 
         {/* Bestsellers Section */}
         {bestsellers.length > 0 && (
-          <YStack marginTop={8} marginBottom={24}>
+          <YStack marginBottom={24}>
             <Text
               fontSize={20}
               fontWeight="700"
-              color="#1A0F08"
+              color={DesignTokens.colors.brown[900]}
               marginBottom={16}
               paddingHorizontal={20}
             >
@@ -362,47 +365,14 @@ export function HomePage({
                 const isChefSpecial = item.category?.isFeatured;
 
                 return (
-                  <View key={item.id} style={styles.bestsellerCard}>
-                    <View style={styles.bestsellerImageContainer}>
-                      <FoodImage
-                        imageUrl={item.imageUrl}
-                        width={SCREEN_WIDTH * 0.7}
-                        height={180}
-                        borderRadius={16}
-                        resizeMode="cover"
-                      />
-                      {isPopular && (
-                        <View style={[styles.badge, styles.popularBadge]}>
-                          <Text style={styles.badgeText}>Popular</Text>
-                        </View>
-                      )}
-                      {isChefSpecial && !isPopular && (
-                        <View style={[styles.badge, styles.chefBadge]}>
-                          <Text style={styles.chefBadgeText}>Chef's Special</Text>
-                        </View>
-                      )}
-                    </View>
-                    <YStack padding={16} gap={8}>
-                      <Text fontSize={16} fontWeight="600" color="#1A0F08" numberOfLines={1}>
-                        {item.name}
-                      </Text>
-                      <Text fontSize={13} color="#6B7280" numberOfLines={2} lineHeight={18}>
-                        {item.description}
-                      </Text>
-                      <XStack alignItems="center" justifyContent="space-between">
-                        <Text fontSize={16} fontWeight="700" color="#1A0F08">
-                          ₹{price.toFixed(0)}
-                        </Text>
-                        <TouchableOpacity
-                          style={styles.addButton}
-                          onPress={() => handleAddToCart(item)}
-                          disabled={!item.isAvailable}
-                        >
-                          <Text style={styles.addButtonText}>Add</Text>
-                        </TouchableOpacity>
-                      </XStack>
-                    </YStack>
-                  </View>
+                  <BestsellerCard
+                    key={item.id}
+                    item={item}
+                    price={price}
+                    isPopular={isPopular}
+                    isChefSpecial={isChefSpecial}
+                    onAddToCart={handleAddToCart}
+                  />
                 );
               })}
             </ScrollView>
@@ -411,9 +381,7 @@ export function HomePage({
 
         {/* Category Filter Buttons */}
         <XStack
-          paddingHorizontal={20}
-          marginBottom={16}
-          gap={12}
+          style={styles.categoryFilter}
         >
           <ScrollView
             horizontal
@@ -446,11 +414,11 @@ export function HomePage({
         </XStack>
 
         {/* Mains Section */}
-        <YStack paddingHorizontal={20} paddingBottom={100}>
+        <YStack paddingHorizontal={20} paddingBottom={120}>
           <Text
             fontSize={20}
             fontWeight="700"
-            color="#1A0F08"
+            color={DesignTokens.colors.brown[900]}
             marginBottom={16}
           >
             {selectedCategory}
@@ -458,14 +426,14 @@ export function HomePage({
 
           {loading ? (
             <YStack alignItems="center" padding="$6">
-              <Text color="#6B7280">Loading menu items...</Text>
+              <Text color={DesignTokens.colors.charcoal[500]}>Loading menu items...</Text>
             </YStack>
           ) : filteredItems.length === 0 ? (
             <YStack alignItems="center" padding="$6">
-              <Text color="#6B7280">No items found</Text>
+              <Text color={DesignTokens.colors.charcoal[500]}>No items found</Text>
             </YStack>
           ) : (
-            <YStack gap={16}>
+            <YStack style={styles.menuItemsContainer}>
               {filteredItems.map((item) => {
                 const price = parseFloat(
                   item.quantityOptions?.[0]?.price || item.basePrice || '0'
@@ -476,67 +444,17 @@ export function HomePage({
                 const isChefSpecial = item.category?.isFeatured;
 
                 return (
-                  <View key={item.id} style={styles.mainsCard}>
-                    <View style={styles.mainsImageContainer}>
-                      <FoodImage
-                        imageUrl={item.imageUrl}
-                        width={100}
-                        height={100}
-                        borderRadius={12}
-                        resizeMode="cover"
-                      />
-                      {isChefSpecial && (
-                        <View style={[styles.smallBadge, styles.chefBadge]}>
-                          <Text style={styles.chefBadgeText}>Chef's Special</Text>
-                        </View>
-                      )}
-                    </View>
-                    <YStack flex={1} paddingLeft={12} justifyContent="space-between">
-                      <YStack gap={4}>
-                        <Text fontSize={16} fontWeight="600" color="#1A0F08" numberOfLines={1}>
-                          {item.name}
-                        </Text>
-                        <Text fontSize={13} color="#6B7280" numberOfLines={2} lineHeight={18}>
-                          {item.description}
-                        </Text>
-                        {dietaryLabel && (
-                          <View style={[styles.dietaryBadge, { backgroundColor: dietaryColor }]}>
-                            <Text style={styles.dietaryBadgeText}>{dietaryLabel}</Text>
-                          </View>
-                        )}
-                      </YStack>
-                      <XStack alignItems="center" justifyContent="space-between" marginTop={8}>
-                        <Text fontSize={16} fontWeight="700" color="#1A0F08">
-                          ₹{price.toFixed(0)}
-                        </Text>
-                        {quantity === 0 ? (
-                          <TouchableOpacity
-                            style={styles.addButtonSmall}
-                            onPress={() => handleAddToCart(item)}
-                            disabled={!item.isAvailable}
-                          >
-                            <Text style={styles.addButtonText}>Add</Text>
-                          </TouchableOpacity>
-                        ) : (
-                          <View style={styles.quantitySelector}>
-                            <TouchableOpacity
-                              style={styles.quantityButton}
-                              onPress={() => handleUpdateQuantity(item, quantity - 1)}
-                            >
-                              <Text style={styles.quantityButtonText}>-</Text>
-                            </TouchableOpacity>
-                            <Text style={styles.quantityText}>{quantity}</Text>
-                            <TouchableOpacity
-                              style={styles.quantityButton}
-                              onPress={() => handleUpdateQuantity(item, quantity + 1)}
-                            >
-                              <Text style={styles.quantityButtonText}>+</Text>
-                            </TouchableOpacity>
-                          </View>
-                        )}
-                      </XStack>
-                    </YStack>
-                  </View>
+                  <MenuItemCard
+                    key={item.id}
+                    item={item}
+                    price={price}
+                    quantity={quantity}
+                    dietaryLabel={dietaryLabel}
+                    dietaryColor={dietaryColor}
+                    isChefSpecial={isChefSpecial}
+                    onAddToCart={handleAddToCart}
+                    onUpdateQuantity={handleUpdateQuantity}
+                  />
                 );
               })}
             </YStack>
@@ -573,7 +491,7 @@ export function HomePage({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FBF9F6',
+    backgroundColor: DesignTokens.colors.beige[50],
   },
   homeContent: {
     flexGrow: 1,
@@ -582,182 +500,86 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 100,
+    paddingBottom: 120,
   },
   searchBar: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
+    minHeight: 56,
+    shadowColor: DesignTokens.colors.neutral.black,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 3,
   },
   searchInput: {
     flex: 1,
     fontSize: 15,
-    color: '#1A0F08',
+    color: DesignTokens.colors.brown[900],
   },
   scanButton: {
-    backgroundColor: '#3B82F6',
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
+    backgroundColor: DesignTokens.colors.primary.blue,
+    paddingHorizontal: 32,
+    minHeight: 56,
+    borderRadius: 12,
     marginTop: 16,
-  },
-  bestsellersContainer: {
-    paddingHorizontal: 20,
-    gap: 12,
-  },
-  bestsellerCard: {
-    width: SCREEN_WIDTH * 0.7,
-    backgroundColor: 'white',
-    borderRadius: 20,
-    overflow: 'hidden',
-    marginRight: 12,
-    shadowColor: '#000',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: DesignTokens.colors.primary.blue,
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 4,
   },
-  bestsellerImageContainer: {
-    position: 'relative',
-    width: '100%',
-    height: 180,
-  },
-  badge: {
-    position: 'absolute',
-    top: 12,
-    left: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
-  },
-  popularBadge: {
-    backgroundColor: '#F08080',
-  },
-  chefBadge: {
-    backgroundColor: '#3A3A3A',
-  },
-  badgeText: {
-    color: 'white',
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  chefBadgeText: {
-    color: '#FF6B35',
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  smallBadge: {
-    position: 'absolute',
-    top: 8,
-    left: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  addButton: {
-    backgroundColor: '#FF6B35',
+  bestsellersContainer: {
     paddingHorizontal: 20,
-    paddingVertical: 8,
-    borderRadius: 20,
+    gap: 16,
+    paddingVertical: 4,
   },
-  addButtonSmall: {
-    backgroundColor: '#FF6B35',
-    paddingHorizontal: 16,
-    paddingVertical: 6,
-    borderRadius: 16,
-  },
-  addButtonText: {
-    color: 'white',
-    fontSize: 14,
-    fontWeight: '600',
+  categoryFilter: {
+    paddingHorizontal: 20,
+    paddingVertical: 4,
   },
   categoryContainer: {
-    gap: 12,
+    gap: 16,
   },
   categoryButton: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 20,
-    backgroundColor: 'white',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
+    paddingHorizontal: 24,
+    minHeight: 48,
+    borderRadius: 24,
+    backgroundColor: DesignTokens.colors.neutral.white,
+    borderColor: DesignTokens.colors.orange[500],
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   categoryButtonActive: {
-    backgroundColor: '#FF6B35',
-    borderColor: '#FF6B35',
+    backgroundColor: DesignTokens.colors.orange[500],
+    borderColor: DesignTokens.colors.orange[500],
   },
   categoryButtonText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#6B7280',
+    fontSize: 15,
+    fontWeight: '600',
+    color: DesignTokens.colors.charcoal[500],
   },
   categoryButtonTextActive: {
-    color: 'white',
-    fontWeight: '600',
+    color: DesignTokens.colors.neutral.white,
+    fontWeight: '700',
+  },
+  menuItemsContainer: {
+    gap: 8
   },
   mainsCard: {
     flexDirection: 'row',
-    backgroundColor: 'white',
+    backgroundColor: DesignTokens.colors.neutral.white,
     borderRadius: 16,
-    padding: 12,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
+    padding: 16,
+    marginBottom: 16,
     elevation: 2,
-  },
-  mainsImageContainer: {
-    position: 'relative',
-    width: 100,
-    height: 100,
-    borderRadius: 12,
-    overflow: 'hidden',
-  },
-  dietaryBadge: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-    marginTop: 4,
-  },
-  dietaryBadgeText: {
-    color: 'white',
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  quantitySelector: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#FF6B35',
-    borderRadius: 16,
-    paddingHorizontal: 4,
-    paddingVertical: 4,
-  },
-  quantityButton: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  quantityButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1A0F08',
-  },
-  quantityText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1A0F08',
-    paddingHorizontal: 12,
   },
   cartBar: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: '#FF6B35',
+    backgroundColor: DesignTokens.colors.orange[500],
     paddingHorizontal: 20,
     paddingVertical: 16,
     flexDirection: 'row',
@@ -765,7 +587,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    shadowColor: '#000',
+    shadowColor: DesignTokens.colors.neutral.black,
     shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
@@ -774,25 +596,33 @@ const styles = StyleSheet.create({
   cartItemCount: {
     fontSize: 14,
     fontWeight: '600',
-    color: 'white',
+    color: DesignTokens.colors.neutral.white,
   },
   cartTotal: {
     fontSize: 18,
     fontWeight: '700',
-    color: 'white',
+    color: DesignTokens.colors.neutral.white,
   },
   viewCartButton: {
-    backgroundColor: 'white',
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 20,
+    backgroundColor: DesignTokens.colors.neutral.white,
+    paddingHorizontal: 32,
+    minHeight: 56,
+    borderRadius: 28,
     borderWidth: 2,
-    borderColor: '#FF6B35',
+    borderColor: DesignTokens.colors.orange[500],
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: DesignTokens.colors.neutral.black,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 4,
   },
   viewCartButtonText: {
-    color: '#FF6B35',
-    fontSize: 16,
+    color: DesignTokens.colors.orange[500],
+    fontSize: 17,
     fontWeight: '700',
+    letterSpacing: 0.5,
   },
 });
 
