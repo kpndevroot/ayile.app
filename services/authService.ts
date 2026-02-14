@@ -20,7 +20,6 @@ export interface SignupData {
  */
 export class AuthService {
   static async login(credentials: LoginCredentials): Promise<{ user: User; token: string }> {
-    console.log('login', credentials);
     const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.AUTH.LOGIN}`, {
       method: 'POST',
       headers: {
