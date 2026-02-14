@@ -28,7 +28,7 @@ export interface OrderCardProps {
  * Reusable Order Card Component
  * Enhanced with improved touch targets, visual hierarchy, and accessibility
  */
-export function OrderCard({
+const OrderCard = React.memo(function OrderCard({
   orderId,
   timeAgo,
   customerName,
@@ -316,4 +316,17 @@ export function OrderCard({
       </YStack>
     </Card>
   );
-}
+}, (prevProps, nextProps) => {
+  // Custom comparison function to prevent unnecessary re-renders
+  return (
+    prevProps.orderId === nextProps.orderId &&
+    prevProps.timeAgo === nextProps.timeAgo &&
+    prevProps.customerName === nextProps.customerName &&
+    prevProps.paymentMethod === nextProps.paymentMethod &&
+    prevProps.paymentAmount === nextProps.paymentAmount &&
+    prevProps.itemsCount === nextProps.itemsCount &&
+    prevProps.specialInstructions === nextProps.specialInstructions
+  );
+});
+
+export { OrderCard };

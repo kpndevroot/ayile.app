@@ -72,6 +72,11 @@ class WebSocketService {
         this.isConnecting = false;
         throw new Error('No authentication token available');
       }
+      if (!API_BASE_URL) {
+        console.log('No API base URL available', API_BASE_URL);
+        this.isConnecting = false;
+        throw new Error('No API base URL available');
+      }
 
       // Convert http to ws
       const wsUrl = API_BASE_URL.replace('http://', 'ws://').replace('https://', 'wss://');
@@ -88,7 +93,7 @@ class WebSocketService {
         this.reconnectDelay = 1000;
         this.notifyConnectionState(true);
         this.startPingInterval();
-        
+
         // Resubscribe to previous subscriptions
         this.resubscribe();
       };
@@ -144,12 +149,12 @@ class WebSocketService {
       this.reconnectTimer = null;
     }
     this.stopPingInterval();
-    
+
     if (this.ws) {
       this.ws.close();
       this.ws = null;
     }
-    
+
     this.isConnected = false;
     this.isConnecting = false;
     this.subscribedOrders.clear();
@@ -179,7 +184,7 @@ class WebSocketService {
    */
   unsubscribeFromOrder(orderId: string): void {
     this.subscribedOrders.delete(orderId);
-    
+
     if (!this.isConnected || !this.ws) {
       return;
     }
@@ -212,7 +217,7 @@ class WebSocketService {
    */
   onMessage(handler: MessageHandler): () => void {
     this.messageHandlers.add(handler);
-    
+
     // Return unsubscribe function
     return () => {
       this.messageHandlers.delete(handler);
@@ -224,7 +229,7 @@ class WebSocketService {
    */
   onConnectionStateChange(handler: ConnectionStateHandler): () => void {
     this.connectionStateHandlers.add(handler);
-    
+
     // Return unsubscribe function
     return () => {
       this.connectionStateHandlers.delete(handler);
@@ -292,7 +297,7 @@ class WebSocketService {
 
     this.reconnectAttempts++;
     const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1);
-    
+
     console.log(`[WebSocket] Attempting to reconnect in ${delay}ms (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
 
     this.reconnectTimer = setTimeout(() => {
@@ -305,7 +310,7 @@ class WebSocketService {
    */
   private startPingInterval(): void {
     this.stopPingInterval();
-    
+
     this.pingInterval = setInterval(() => {
       if (this.isConnected && this.ws) {
         this.send({ type: 'ping' });

@@ -1,5 +1,6 @@
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
+import Constants, { ExecutionEnvironment } from 'expo-constants';
 
 /**
  * OS-level notification service using expo-notifications.
@@ -9,20 +10,27 @@ import { Platform } from 'react-native';
 // Track permission status to avoid redundant checks
 let permissionGranted: boolean | null = null;
 
+// Determine if we are running in Expo Go
+const isExpoGo = Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
+
 /**
  * Configure how notifications are presented when the app is in foreground.
  * Must be called once at app startup (before any notifications fire).
  */
 export function configureNotificationHandler(): void {
-  Notifications.setNotificationHandler({
-    handleNotification: async () => ({
-      shouldShowAlert: true,
-      shouldPlaySound: true,
-      shouldSetBadge: false,
-      shouldShowBanner: true,
-      shouldShowList: true,
-    }),
-  });
+  try {
+    Notifications.setNotificationHandler({
+      handleNotification: async () => ({
+        shouldShowAlert: true,
+        shouldPlaySound: true,
+        shouldSetBadge: false,
+        shouldShowBanner: true,
+        shouldShowList: true,
+      }),
+    });
+  } catch (error) {
+    console.warn('[OSNotifications] Failed to configure notification handler:', error);
+  }
 }
 
 /**
@@ -31,13 +39,19 @@ export function configureNotificationHandler(): void {
  */
 export async function setupNotificationChannel(): Promise<void> {
   if (Platform.OS === 'android') {
-    await Notifications.setNotificationChannelAsync('orders', {
-      name: 'Order Updates',
-      importance: Notifications.AndroidImportance.HIGH,
-      vibrationPattern: [0, 250, 250, 250],
-      lightColor: '#F97316',
-      sound: 'default',
-    });
+    // In Expo Go SDK 53+, remote push notification functionality is removed on Android.
+    // While this is a local channel setup, the library may still trigger checks that fail in Expo Go.
+    try {
+      await Notifications.setNotificationChannelAsync('orders', {
+        name: 'Order Updates',
+        importance: Notifications.AndroidImportance.HIGH,
+        vibrationPattern: [0, 250, 250, 250],
+        lightColor: '#F97316',
+        sound: 'default',
+      });
+    } catch (error) {
+      console.warn('[OSNotifications] Failed to set up notification channel:', error);
+    }
   }
 }
 
@@ -54,11 +68,13 @@ export async function requestNotificationPermission(): Promise<boolean> {
       return true;
     }
 
+    // On Android in Expo Go, requestPermissionsAsync might throw or warn about missing push capability
     const { status } = await Notifications.requestPermissionsAsync();
     permissionGranted = status === 'granted';
     return permissionGranted;
   } catch (error) {
     console.warn('[OSNotifications] Permission request failed:', error);
+    // If it fails due to Expo Go limitations, we just assume false but don't crash
     permissionGranted = false;
     return false;
   }
@@ -114,7 +130,18 @@ export async function scheduleLocalNotification(config: {
  * Call once at app startup.
  */
 export async function initializeNotifications(): Promise<boolean> {
-  configureNotificationHandler();
-  await setupNotificationChannel();
-  return requestNotificationPermission();
+  try {
+    configureNotificationHandler();
+
+    // In Expo Go on Android, skip operations that are known to cause issues with remote push removal
+    // if they are being correctly identified by the library as part of push functionality.
+    // However, channel setup is generally for local too, so we try but catch.
+    await setupNotificationChannel();
+
+    // Request permission, which is also necessary for local notifications
+    return await requestNotificationPermission();
+  } catch (error) {
+    console.error('[OSNotifications] Failed to initialize notifications:', error);
+    return false;
+  }
 }

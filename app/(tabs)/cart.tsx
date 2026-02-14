@@ -10,6 +10,7 @@ import { StorageService, LocalCartItem } from '@/utils/storage';
 import { API_BASE_URL, API_ENDPOINTS } from '@/constants/api';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
+import { CartItemRow } from '@/components/cart/CartItemRow';
 
 export default function CartScreen() {
   const router = useRouter();
@@ -73,7 +74,7 @@ export default function CartScreen() {
     }, [loadCartData])
   );
 
-  const handleUpdateQuantity = async (cartItem: LocalCartItem, newQuantity: number) => {
+  const handleUpdateQuantity = useCallback(async (cartItem: LocalCartItem, newQuantity: number) => {
     if (newQuantity < 1) {
       await handleRemoveItem(cartItem);
       return;
@@ -88,9 +89,9 @@ export default function CartScreen() {
       console.error('Error updating quantity:', error);
       Alert.alert('Error', 'Failed to update quantity. Please try again.');
     }
-  };
+  }, [loadCartData]);
 
-  const handleRemoveItem = async (cartItem: LocalCartItem) => {
+  const handleRemoveItem = useCallback(async (cartItem: LocalCartItem) => {
     Alert.alert(
       'Remove Item',
       `Remove ${cartItem.menuItem?.name || 'this item'} from cart?`,
@@ -116,7 +117,7 @@ export default function CartScreen() {
         },
       ]
     );
-  };
+  }, [loadCartData]);
 
   const [showTableModal, setShowTableModal] = useState(false);
   const [tableNumberInput, setTableNumberInput] = useState('');
@@ -322,95 +323,14 @@ export default function CartScreen() {
 
           {/* Cart Items */}
           <YStack gap={12} marginBottom={24}>
-            {localCart.map((cartItem) => {
-              const itemPrice = parseFloat(cartItem.menuItem?.price || '0');
-              const totalPrice = itemPrice * cartItem.quantity;
-
-              return (
-                <XStack
-                  key={`${cartItem.menuItemId}-${cartItem.quantityOptionId || 'default'}`}
-                  backgroundColor="white"
-                  borderRadius={12}
-                  padding={16}
-                  gap={12}
-                  alignItems="center"
-                >
-                  <YStack flex={1} gap={4}>
-                    <Text
-                      fontSize={16}
-                      fontWeight="600"
-                      color="$brown9"
-                    >
-                      {cartItem.menuItem?.name || 'Item'}
-                      {cartItem.quantityLabel ? ` (${cartItem.quantityLabel})` : ''}
-                    </Text>
-                    <Text
-                      fontSize={14}
-                      fontWeight="400"
-                      color="$lightBrown5"
-                    >
-                      ₹{itemPrice.toFixed(2)} each
-                    </Text>
-                  </YStack>
-
-                  {/* Quantity Controls */}
-                  <XStack
-                    alignItems="center"
-                    gap={12}
-                    backgroundColor="#F3F4F6"
-                    borderRadius={8}
-                    padding={4}
-                  >
-                    <TouchableOpacity
-                      onPress={() => {
-                        if (cartItem.quantity > 1) {
-                          handleUpdateQuantity(cartItem, cartItem.quantity - 1);
-                        } else {
-                          handleRemoveItem(cartItem);
-                        }
-                      }}
-                      style={[
-                        styles.quantityButton,
-                        cartItem.quantity === 1 && styles.removeButton,
-                      ]}
-                    >
-                      <MaterialIcons
-                        name={cartItem.quantity === 1 ? 'delete-outline' : 'remove'}
-                        size={20}
-                        color={cartItem.quantity === 1 ? '#EF4444' : '#6B7280'}
-                      />
-                    </TouchableOpacity>
-
-                    <Text
-                      fontSize={16}
-                      fontWeight="600"
-                      color="$brown9"
-                      minWidth={30}
-                      textAlign="center"
-                    >
-                      {cartItem.quantity}
-                    </Text>
-
-                    <TouchableOpacity
-                      onPress={() => handleUpdateQuantity(cartItem, cartItem.quantity + 1)}
-                      style={styles.quantityButton}
-                    >
-                      <MaterialIcons name="add" size={20} color="#F97316" />
-                    </TouchableOpacity>
-                  </XStack>
-
-                  <YStack alignItems="flex-end" gap={2}>
-                    <Text
-                      fontSize={18}
-                      fontWeight="700"
-                      color="$orange6"
-                    >
-                      ₹{totalPrice.toFixed(2)}
-                    </Text>
-                  </YStack>
-                </XStack>
-              );
-            })}
+            {localCart.map((cartItem) => (
+              <CartItemRow
+                key={`${cartItem.menuItemId}-${cartItem.quantityOptionId || 'default'}`}
+                cartItem={cartItem}
+                onUpdateQuantity={handleUpdateQuantity}
+                onRemove={handleRemoveItem}
+              />
+            ))}
           </YStack>
 
           {/* Total */}

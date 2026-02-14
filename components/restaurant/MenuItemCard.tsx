@@ -29,7 +29,7 @@ interface MenuItemCardProps {
  * Menu Item Card Component
  * Clean, modern card design with improved spacing and hierarchy
  */
-export function MenuItemCard({
+const MenuItemCard = React.memo(function MenuItemCard({
   item,
   orderQuantity,
   onAdd,
@@ -83,7 +83,7 @@ export function MenuItemCard({
     if (categoryUpper.includes('DINNER')) {
       return LucideIcons.Moon;
     }
-    
+
     // Default icon for unknown categories
     return LucideIcons.Utensils;
   };
@@ -309,7 +309,18 @@ export function MenuItemCard({
       </YStack>
     </YStack>
   );
-}
+}, (prevProps, nextProps) => {
+  // Custom comparison function to prevent unnecessary re-renders
+  return (
+    prevProps.item.id === nextProps.item.id &&
+    prevProps.item.name === nextProps.item.name &&
+    prevProps.item.price === nextProps.item.price &&
+    prevProps.item.isAvailable === nextProps.item.isAvailable &&
+    prevProps.orderQuantity === nextProps.orderQuantity
+  );
+});
+
+export { MenuItemCard };
 
 const styles = StyleSheet.create({
   card: {

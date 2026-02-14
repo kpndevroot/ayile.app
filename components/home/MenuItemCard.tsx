@@ -20,7 +20,7 @@ interface MenuItemCardProps {
  * MenuItemCard Component
  * Minimalist card design that blends with background
  */
-export function MenuItemCard({
+const MenuItemCard = React.memo(function MenuItemCard({
     item,
     price,
     quantity,
@@ -124,7 +124,20 @@ export function MenuItemCard({
             </YStack>
         </View>
     );
-}
+}, (prevProps, nextProps) => {
+    // Custom comparison function to prevent unnecessary re-renders
+    return (
+        prevProps.item.id === nextProps.item.id &&
+        prevProps.item.name === nextProps.item.name &&
+        prevProps.item.isAvailable === nextProps.item.isAvailable &&
+        prevProps.price === nextProps.price &&
+        prevProps.quantity === nextProps.quantity &&
+        prevProps.dietaryLabel === nextProps.dietaryLabel &&
+        prevProps.isChefSpecial === nextProps.isChefSpecial
+    );
+});
+
+export { MenuItemCard };
 
 const styles = StyleSheet.create({
     card: {

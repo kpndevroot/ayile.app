@@ -13,7 +13,7 @@ interface MenuItemCardProps {
   onDelete: (item: StaffMenuItem) => void;
 }
 
-export function MenuItemCard({ item, onUploadImage, onDelete }: MenuItemCardProps) {
+const MenuItemCard = React.memo(function MenuItemCard({ item, onUploadImage, onDelete }: MenuItemCardProps) {
   const imageUrl = getFullImageUrl(item.imageUrl);
 
   return (
@@ -122,4 +122,15 @@ export function MenuItemCard({ item, onUploadImage, onDelete }: MenuItemCardProp
       </YStack>
     </XStack>
   );
-}
+}, (prevProps, nextProps) => {
+  // Custom comparison function to prevent unnecessary re-renders
+  return (
+    prevProps.item.id === nextProps.item.id &&
+    prevProps.item.name === nextProps.item.name &&
+    prevProps.item.basePrice === nextProps.item.basePrice &&
+    prevProps.item.isAvailable === nextProps.item.isAvailable &&
+    prevProps.item.imageUrl === nextProps.item.imageUrl
+  );
+});
+
+export { MenuItemCard };
