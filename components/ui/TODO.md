@@ -1,132 +1,19 @@
 # Forks TODO
 
 
-- [x] **1. Notification for New Orders in Staff Dashboard**
+[] time is not updating in order screen also the estimated time not updating while 
+resturant staff update
 
-- **Priority**: High
-- **Type**: Feature
+[] the order screen not exit while order is delivered check the active order only show the active order not delivered remove the order status while order is delivered
 
-**Problem**: When a new order arrives, the staff dashboard silently refreshes data via WebSocket (`app/(staff)/dashboard.tsx:48-103`). There is no audio/haptic/visual alert to grab staff attention.
 
-**Current WebSocket flow**: The dashboard subscribes to restaurant updates. On `order:created` message, it calls `loadData()` to silently refresh. No notification infrastructure exists (`expo-notifications` is NOT installed).
+- also order more placed then new order screen not open in order screen
 
-**Files to modify**:
-- `package.json` — Add `expo-notifications` dependency: `npx expo install expo-notifications`.
-- `Forks/app/(staff)/dashboard.tsx` — In the WebSocket `order:created` handler (line ~75):
-  1. Play a notification sound (use `expo-av` or `expo-notifications`).
-  2. Trigger haptic feedback via `expo-haptics` (already in dependencies).
-  3. Show an in-app banner/toast: "New Order #ORD-xxx from Table Y".
-  4. Optionally flash/pulse the "Pending" metrics card.
-- `Forks/app/_layout.tsx` — Register for push notification permissions and set up notification channel on app start (for background notifications).
-- `forks-fastify-api/src/routes/orders/index.ts` — The WebSocket broadcast at line 694 already sends `order:created`. For push notifications when app is backgrounded, add a push notification trigger (requires Expo push service or Firebase Cloud Messaging integration).
 
-**Suggested approach**: Start with in-app alerts (sound + haptic + banner) since the staff app is usually in the foreground. Add push notifications as a follow-up.
+[] snoozing option for staff notification
 
----
 
-- [x] **2. Notification When Order Ready for Delivery**
-
-- **Priority**: High
-- **Type**: Feature
-
-**Problem**: When kitchen marks an order as READY, the customer should be notified. Currently the order screen (`app/(tabs)/order.tsx:248-319`) listens for `order:updated` via WebSocket and updates the UI, but there is no alert/sound/push notification.
-
-**Files to modify**:
-- `Forks/app/(tabs)/order.tsx` — In the WebSocket `order:updated` handler (line ~270):
-  1. Check if `updatedOrder.status === 'READY'`.
-  2. Show in-app alert: "Your order is ready for pickup!"
-  3. Trigger haptic feedback (`expo-haptics`).
-  4. Play a notification sound.
-- `Forks/components/order/OrderStatusScreen.tsx` — Add a visual celebration effect when status transitions to READY (e.g., pulse animation on the "Ready" step, green highlight).
-- For background notifications: Same as TODO #5 — requires `expo-notifications` + push notification backend.
-
-**Also consider notifying staff** when order transitions to READY via `Forks/app/(staff)/ready-for-delivery.tsx` — add a similar alert.
-
----
-
-- [x] **3. Animation While Order Is Being Prepared**
-
-- **Priority**: Medium
-- **Type**: UI Enhancement
-
-**Current state**: The order status screen (`Forks/components/order/OrderStatusScreen.tsx`) shows a static progress tracker with 4 steps (Order Placed, Preparing, Ready, Served). Active steps are orange circles, inactive are beige. No animation.
-
-**Available animation libraries**:
-- `react-native-reanimated` v4.1.1 (installed)
-- React Native `Animated` API (used in `CustomTabBar.tsx` and `order.tsx`)
-- `@tamagui/animations-react-native` (installed via Tamagui)
-
-**Files to modify**:
-- `Forks/components/order/OrderStatusScreen.tsx`:
-  1. Add a pulsing/breathing animation on the active "Preparing" step circle using `Animated.loop(Animated.sequence([...]))` or Reanimated `withRepeat(withTiming(...))`.
-  2. Add a cooking/chef animation — either a custom Reanimated animation or consider installing `lottie-react-native` for a Lottie JSON animation of a chef cooking.
-  3. Animate the progress line between steps (fill animation from left to right).
-  4. Add a shimmer/loading effect on the estimated time display.
-
-**Approach**: Use Reanimated for performance. Create a `PulsingDot` component with `useSharedValue` + `useAnimatedStyle` for the breathing effect. For the progress line, animate `width` from 0% to 100% with `withTiming`.
-
----
-
-- [x] **4. Animation While Order Is Being Delivered**
-
-- **Priority**: Medium
-- **Type**: UI Enhancement
-
-**Current state**: Same static progress tracker. When status is `OUT_FOR_DELIVERY` or `READY`, no delivery-specific animation exists.
-
-**Files to modify**:
-- `Forks/components/order/OrderStatusScreen.tsx`:
-  1. When status is READY/OUT_FOR_DELIVERY, show a delivery-themed animation (e.g., a moving bike/waiter icon along the progress line).
-  2. Animate the step transition from "Ready" to "Served" with a slide effect.
-  3. Add a subtle bouncing animation on the delivery icon.
-  4. Consider a countdown/timer animation for estimated delivery time.
-
-**Approach**: Use Reanimated `withRepeat(withSequence(withTiming(...)))` for the bouncing delivery icon. Translate X position along the progress bar to simulate movement.
-
----
-
-- [x] **5. Animation While Order Is Completed**
-
-- **Priority**: Medium
-- **Type**: UI Enhancement
-
-**Current state**: When order reaches DELIVERED status, the `OrderStatusScreen` shows a static checkmark icon and "Delivered" text. No celebration effect.
-
-**Files to modify**:
-- `Forks/components/order/OrderStatusScreen.tsx`:
-  1. Add a celebration animation when status transitions to DELIVERED — confetti burst, checkmark scale-in with bounce, or a Lottie success animation.
-  2. Animate all 4 progress steps turning green/orange in sequence (cascade fill effect).
-  3. Show a brief "Order Complete!" overlay with fade-in/fade-out.
-- `Forks/app/(tabs)/order.tsx` — Detect the DELIVERED transition in the WebSocket handler and trigger the animation + haptic feedback.
-
-**Approach**: For confetti, consider `react-native-confetti-cannon` or build a simple particle effect with Reanimated. For the checkmark, use `withSpring` for a satisfying bounce-in effect. For the cascade, stagger `withDelay` on each step circle.
-
----
-
-- [ ] **6. Add Menu Item — Complete Staff & Admin UI**
-
-- **Priority**: Medium
-- **Type**: Feature Enhancement
-- **Status**: Partially Done
-
-**Current state**: The add-menu-item screen (`Forks/app/(staff)/add-menu-item.tsx`) has a form with basic fields (name, description, category, dietary type, spicy level, price, prep time). However, expandable sections for quantity options, customizations, and modifiers are UI placeholders with no implementation.
-
-**What works**:
-- Basic form fields and validation.
-- Category selection from API.
-- `StaffService.createMenuItem()` (`Forks/services/staffService.ts:606-657`) creates the item with a default "Full" quantity option.
-
-**What needs implementation**:
-- `Forks/app/(staff)/add-menu-item.tsx`:
-  1. **Quantity Options section** — Allow staff to add multiple quantity options (Quarter/Half/Full) with individual prices. Use `StaffService.getQuantityTypes()` to load available types. Each option needs: quantity type selector, price input, toggle for default/recommended.
-  2. **Customizations section** — Allow adding customization groups (e.g., "Spice Level") with options (e.g., "Mild", "Medium", "Hot") and price modifiers.
-  3. **Image upload** — See TODO #3.
-- `Forks/services/staffService.ts` — The `createMenuItem` method (line 606) already sends `quantityOptions` array. Ensure the form builds this array correctly from the UI inputs.
-- Backend already supports all of this via `POST /api/menu-items` — the Prisma schema has `QuantityOption`, `ItemCustomization`, and `CustomizationOption` models ready.
-
----
-
-- [ ] **7. Migrate Order Update Socket to SSE (Server-Sent Events)**
+- [ ] **1. Migrate Order Update Socket to SSE (Server-Sent Events)**
 
 - **Priority**: Low
 - **Type**: Architecture Change
@@ -154,3 +41,163 @@
 - `Forks/app/(tabs)/order.tsx` — Update WebSocket references to SSE service.
 
 **Consideration**: React Native does not have a built-in `EventSource`. You'll need `react-native-sse` or a fetch-based SSE polyfill. Evaluate if the simplification is worth the migration effort.
+
+
+## [ ] 2. Plan the iOS Compatibility of the App
+
+---
+
+## Quick Wins — Small Changes, Big Impact
+
+---
+
+### 🔒 Security
+
+---
+
+### ⚡ Performance
+
+---
+
+### 🧹 Developer Experience & Maintainability
+
+---
+
+- [ ] **10. Clean Up console.log Statements Across Services**
+
+- **Priority**: Medium
+- **Estimated Effort**: Small
+- **Impact**: 30+ `console.log` calls clutter device logs, slow down debugging, and may leak sensitive data. Replacing them with a structured logger or removing them improves signal-to-noise in debug output.
+
+**Current problem**: `staffService.ts` has 8+ debug logs, `websocketService.ts` has 6+, `authService.ts` logs credentials, `dashboard.tsx` logs connection events. Staff screens have placeholder `console.log('Print')`, `console.log('Call')`, etc.
+
+**Suggested approach**:
+1. Create `Forks/utils/logger.ts` with dev-only logging:
+   ```ts
+   export const logger = {
+     debug: (__DEV__ ? console.log : () => {}),
+     warn: console.warn,
+     error: console.error,
+   };
+   ```
+2. Replace all `console.log` with `logger.debug` (or remove entirely for stubs).
+3. Replace stub `console.log('Print')` / `console.log('Call')` with `Alert.alert('Coming soon')`.
+
+---
+
+- [ ] **11. Replace Stub Event Handlers with User-Facing Feedback**
+
+- **Priority**: Medium
+- **Estimated Effort**: Small
+- **Impact**: Several staff actions silently log to console with no user feedback, making the app feel broken. Users tap "Print", "Download QR", "Call", "View Map" and nothing happens.
+
+**Current problem**: `ready-for-delivery.tsx:320-321` (`onCall`, `onViewMap`), `table-management.tsx:96,279,306` (`Add Table`, `Download QR`, `Print QR`), `order-detail.tsx:192` (`Print`) are all `console.log` stubs.
+
+**Suggested approach**:
+1. Replace each stub with `Alert.alert('Coming Soon', 'This feature is under development.')`.
+2. Or implement the action if straightforward (e.g., `Linking.openURL('tel:${phone}')` for Call).
+
+---
+
+- [ ] **12. Type the Restaurant Data in StorageService**
+
+- **Priority**: Low
+- **Estimated Effort**: Small
+- **Impact**: `StorageService.getRestaurantData()` returns `Promise<any>` and `setRestaurantData(restaurant: any)` accepts `any`. This loses all TypeScript safety downstream and is a silent source of bugs.
+
+**Suggested approach**:
+1. Create a `Restaurant` type in `Forks/types/index.ts` (or use the existing one).
+2. Update `getRestaurantData(): Promise<Restaurant | null>` and `setRestaurantData(restaurant: Restaurant)`.
+
+---
+
+### 🎨 UI/UX
+
+---
+
+- [ ] **13. Add an Error Boundary Component**
+
+- **Priority**: High
+- **Estimated Effort**: Small
+- **Impact**: Currently the app has zero error boundaries. An unhandled JS error in any component crashes the entire app with a blank screen. An error boundary shows a friendly "Something went wrong" screen with a retry button.
+
+**Suggested approach**:
+1. Expo Router exports `ErrorBoundary` — export a custom one from each route file:
+   ```tsx
+   export { ErrorBoundary } from 'expo-router';
+   ```
+2. Or create a custom `ErrorBoundary` component in `Forks/components/ui/ErrorBoundary.tsx` using React class component `componentDidCatch`.
+3. Style it to match the app's design system with a retry button and support message.
+
+---
+
+- [ ] **14. Add Skeleton Loading Screens**
+
+- **Priority**: Medium
+- **Estimated Effort**: Medium
+- **Impact**: Currently the menu, order history, and dashboard show blank white screens during data fetching. Skeleton screens reduce perceived load time by ~40% (Google UX research) and prevent layout shift.
+
+**Suggested approach**:
+1. Create a `SkeletonLoader` component in `Forks/components/ui/SkeletonLoader.tsx` using a shimmer animation from Reanimated.
+2. Use it in `MenuScreen`, `OrderHistoryScreen`, `StaffDashboard` where `isLoading` states exist.
+3. Match the skeleton shapes to the actual card layouts for a seamless transition.
+
+---
+
+- [ ] **15. Add Pull-to-Refresh on Customer Menu Screen**
+
+- **Priority**: Medium
+- **Estimated Effort**: Small
+- **Impact**: Customers have no way to refresh menu data after initial load. If the menu changes (new items, price updates), users are stuck with stale data until they restart the app.
+
+**Suggested approach**:
+1. Add `refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}` to the menu `ScrollView`/`FlatList`.
+2. Wire `onRefresh` to re-fetch menu items from the API.
+3. Apply the same pattern to order history and cart screens.
+
+---
+
+### 🏗️ Scalability & Architecture
+
+---
+
+- [ ] **16. Add Request Timeout and Retry Logic to API Client**
+
+- **Priority**: Medium
+- **Estimated Effort**: Small
+- **Impact**: The `authenticatedFetch` utility in `Forks/utils/api.ts` has no timeout. On slow/flaky networks, requests hang indefinitely with no user feedback. Adding a timeout + 1 retry improves reliability significantly.
+
+**Suggested approach**:
+1. Add `AbortController` with a 15s timeout to `authenticatedFetch`:
+   ```ts
+   const controller = new AbortController();
+   const timeout = setTimeout(() => controller.abort(), 15000);
+   ```
+2. Add a single retry on network errors (not on 4xx/5xx).
+3. Surface timeout errors as user-friendly messages.
+
+---
+
+- [ ] **17. Add Prisma Connection Health Check**
+
+- **Priority**: Low
+- **Estimated Effort**: Small
+- **Impact**: The `/health` endpoint returns `{ status: 'ok' }` without actually checking database connectivity. Deployment monitoring tools would report the API as healthy even if the DB is unreachable.
+
+**Suggested approach**:
+1. Update the `/health` endpoint to run `prisma.$queryRaw('SELECT 1')` and return DB status.
+2. Add a try/catch to return `503` if the DB is unreachable.
+3. Include uptime and memory stats for operational visibility.
+
+---
+
+- [ ] **18. Add JWT Token Refresh/Expiration Handling**
+
+- **Priority**: Medium
+- **Estimated Effort**: Medium
+- **Impact**: If the JWT expires while the user is mid-session, all API requests silently fail with 401. The user sees cryptic errors instead of being prompted to re-login. This is the most common support complaint pattern.
+
+**Suggested approach**:
+1. In `authenticatedFetch`, check for 401 responses.
+2. On 401: clear stored token, dispatch an event to `AuthContext` to show the login modal.
+3. Optionally implement token refresh if the backend supports refresh tokens.

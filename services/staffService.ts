@@ -564,9 +564,9 @@ export class StaffService {
         return [];
       }
 
-      // Get categories associated with restaurant
+      // Get all active categories (global + restaurant-specific)
       const response = await authenticatedFetch(
-        `${API_BASE_URL}/api/categories?restaurantId=${restaurantId}`
+        `${API_BASE_URL}/api/categories`
       );
 
       if (!response.ok) {
@@ -580,7 +580,7 @@ export class StaffService {
       }
 
       const data = await response.json();
-      return data.categories || data.data?.categories || [];
+      return data.categories || data.data || [];
     } catch (error: any) {
       if (error.message && !error.message.includes('Restaurant ID not found')) {
         console.warn('Error fetching categories:', error.message);
@@ -609,7 +609,7 @@ export class StaffService {
       }
 
       const data = await response.json();
-      return data.quantityTypes || data.data?.quantityTypes || [];
+      return data.quantityTypes || data.data || [];
     } catch (error: any) {
       console.warn('Error fetching quantity types:', error.message || 'Unknown error');
       return [];
@@ -621,6 +621,7 @@ export class StaffService {
    */
   static async createMenuItem(menuItemData: any): Promise<any> {
     try {
+      console.log('Creating menu item:', menuItemData);
       const restaurantId = await this.getRestaurantId();
       if (!restaurantId) {
         throw new Error('Restaurant ID not found');
@@ -774,6 +775,67 @@ export class StaffService {
         console.warn('Error fetching menu items:', error.message);
       }
       return [];
+    }
+  }
+
+  /**
+   * Get a single menu item by ID
+   */
+  static async getMenuItemById(menuItemId: string): Promise<any> {
+    try {
+      const response = await authenticatedFetch(
+        `${API_BASE_URL}${API_ENDPOINTS.MENU_ITEMS}/${menuItemId}`
+      );
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to fetch menu item');
+      }
+
+      const data = await response.json();
+      return data.menuItem || data.data?.menuItem;
+    } catch (error) {
+      console.error('Error fetching menu item:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update an existing menu item
+   */
+  static async updateMenuItem(menuItemId: string, menuItemData: any): Promise<any> {
+    try {
+      const restaurantId = await this.getRestaurantId();
+      if (!restaurantId) {
+        throw new Error('Restaurant ID not found');
+      }
+
+      const response = await authenticatedFetch(
+        `${API_BASE_URL}${API_ENDPOINTS.MENU_ITEMS}/${menuItemId}`,
+        {
+          method: 'PUT',
+          body: JSON.stringify({
+            ...menuItemData,
+            restaurantId,
+            dietaryTypes: menuItemData.dietaryTypes || [menuItemData.dietaryType || 'NON_VEG'],
+            isSpicy: menuItemData.spicyLevel > 0,
+            spicyLevel: menuItemData.spicyLevel || 0,
+            prepTimeMinutes: parseInt(menuItemData.prepTimeMinutes || '15', 10),
+            basePrice: parseFloat(menuItemData.basePrice || '0'),
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to update menu item');
+      }
+
+      const data = await response.json();
+      return data.menuItem || data.data?.menuItem;
+    } catch (error) {
+      console.error('Error updating menu item:', error);
+      throw error;
     }
   }
 

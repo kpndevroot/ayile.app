@@ -15,6 +15,9 @@ interface ButtonProps {
   loading?: boolean;
   fullWidth?: boolean;
   style?: ViewStyle;
+  backgroundColor?: string;
+  borderColor?: string;
+  textColor?: string;
 }
 
 /**
@@ -30,6 +33,9 @@ export function Button({
   loading = false,
   fullWidth = false,
   style,
+  backgroundColor: customBgColor,
+  borderColor: customBorderColor,
+  textColor: customTextColor,
 }: ButtonProps) {
   const getVariantStyles = () => {
     switch (variant) {
@@ -105,6 +111,10 @@ export function Button({
   const sizeStyles = getSizeStyles();
   const isDisabled = disabled || loading;
 
+  const finalBgColor = customBgColor || variantStyles.backgroundColor;
+  const finalBorderColor = customBorderColor || (customBgColor && variant === 'primary' ? customBgColor : variantStyles.borderColor);
+  const finalTextColor = customTextColor || variantStyles.textColor;
+
   return (
     <TouchableOpacity
       onPress={onPress}
@@ -114,9 +124,9 @@ export function Button({
         {
           backgroundColor: isDisabled
             ? DesignTokens.colors.neutral.gray300
-            : variantStyles.backgroundColor,
-          borderColor: variantStyles.borderColor,
-          borderWidth: variant === 'outline' ? 2 : 0,
+            : finalBgColor,
+          borderColor: finalBorderColor,
+          borderWidth: (variant === 'outline' || customBorderColor) ? 2 : 0,
           paddingVertical: sizeStyles.paddingVertical,
           paddingHorizontal: sizeStyles.paddingHorizontal,
           borderRadius: DesignTokens.radius.md,
@@ -131,12 +141,12 @@ export function Button({
       {loading ? (
         <ActivityIndicator
           size="small"
-          color={variantStyles.textColor}
+          color={finalTextColor}
         />
       ) : (
         <Text
           style={{
-            color: variantStyles.textColor,
+            color: finalTextColor,
             fontSize: sizeStyles.fontSize,
             fontWeight: DesignTokens.typography.fontWeight.semibold,
             textAlign: 'center',

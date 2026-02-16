@@ -15,6 +15,7 @@ export default function StaffLayout() {
     >
       <Stack.Screen name="(tabs)" options={{ animation: 'none' }} />
       <Stack.Screen name="add-menu-item" />
+      <Stack.Screen name="edit-menu-item" />
       <Stack.Screen name="kitchen-orders" />
       <Stack.Screen name="order-detail" />
       <Stack.Screen name="ready-for-delivery" />
