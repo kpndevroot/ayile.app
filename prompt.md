@@ -1,4 +1,4 @@
-Refactor @Forks/app/(staff)/add-menu-item.tsx to use react-hook-form with best practices and improve the overall UX.
+Refactor @Ayile/app/(staff)/add-menu-item.tsx to use react-hook-form with best practices and improve the overall UX.
 
 🎯 Goals
 

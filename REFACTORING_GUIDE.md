@@ -5,7 +5,7 @@ This document outlines the refactoring structure following SOLID principles.
 ## Directory Structure
 
 ```
-Forks/
+Ayile/
 ├── types/
 │   └── index.ts              # TypeScript types and interfaces
 ├── constants/

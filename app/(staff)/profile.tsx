@@ -80,7 +80,6 @@ export default function StaffProfileScreen() {
             borderBottomWidth={1}
             borderBottomColor={DesignTokens.colors.beige[300]}
             alignItems="center"
-            space="$3"
         >
             <XStack
                 width={40}
@@ -116,7 +115,7 @@ export default function StaffProfileScreen() {
             </XStack>
 
             <ScrollView showsVerticalScrollIndicator={false}>
-                <YStack padding="$4" space="$4">
+                <YStack padding="$4">
 
                     {/* User Profile Card */}
                     <Card
@@ -160,7 +159,7 @@ export default function StaffProfileScreen() {
                     </Card>
 
                     {/* Personal Information */}
-                    <YStack space="$2">
+                    <YStack>
                         <Text fontSize={DesignTokens.typography.fontSize.lg} fontWeight="bold" color={DesignTokens.colors.brown[900]} marginLeft="$1">
                             Personal Information
                         </Text>
@@ -172,13 +171,12 @@ export default function StaffProfileScreen() {
                     </YStack>
 
                     {/* Restaurant Information */}
-                    <YStack space="$2">
+                    <YStack>
                         <Text fontSize={DesignTokens.typography.fontSize.lg} fontWeight="bold" color={DesignTokens.colors.brown[900]} marginLeft="$1">
                             Workplace Details
                         </Text>
                         <Card padding="lg" backgroundColor={DesignTokens.colors.neutral.white} shadow="sm">
                             <ProfileItem icon={Building2} label="Restaurant Name" value={restaurant?.name} />
-
                             <XStack
                                 marginTop="$2"
                                 padding="$3"
@@ -219,7 +217,7 @@ export default function StaffProfileScreen() {
                             {loading ? (
                                 <ActivityIndicator size="small" color={DesignTokens.colors.semantic.error} />
                             ) : (
-                                <XStack space="$2" alignItems="center">
+                                <XStack alignItems="center">
                                     <LogOut size={20} color={DesignTokens.colors.semantic.error} />
                                     <Text color={DesignTokens.colors.semantic.error} fontWeight="600">
                                         Logout
@@ -234,7 +232,7 @@ export default function StaffProfileScreen() {
                             fontSize={DesignTokens.typography.fontSize.xs}
                             color={DesignTokens.colors.brown[400]}
                         >
-                            Forks Staff App v1.0.0
+                            Ayile Staff App v1.0.0
                         </Text>
                     </YStack>
 

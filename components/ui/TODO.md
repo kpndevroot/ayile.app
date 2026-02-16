@@ -1,4 +1,4 @@
-# Forks TODO
+# Ayile TODO
 
 
 [] time is not updating in order screen also the estimated time not updating while 
@@ -19,26 +19,26 @@ resturant staff update
 - **Type**: Architecture Change
 
 **Current state**: Real-time updates use WebSocket via `@fastify/websocket`.
-- Frontend: `Forks/services/websocketService.ts` — Singleton client with auto-reconnect, heartbeat, subscription management.
-- Backend: `forks-fastify-api/src/utils/websocket-manager.ts` — Tracks clients, role-based broadcasting.
-- Backend routes: `forks-fastify-api/src/routes/orders/index.ts:28-178` — WS endpoint at `/api/orders/ws`.
+- Frontend: `Ayile/services/websocketService.ts` — Singleton client with auto-reconnect, heartbeat, subscription management.
+- Backend: `ayile-fastify-api/src/utils/websocket-manager.ts` — Tracks clients, role-based broadcasting.
+- Backend routes: `ayile-fastify-api/src/routes/orders/index.ts:28-178` — WS endpoint at `/api/orders/ws`.
 
 **Why SSE**: The communication is mostly server→client (order status updates). The only client→server messages are `subscribe`/`unsubscribe`/`ping`. SSE is simpler, uses standard HTTP, has built-in reconnection, and works better with load balancers/proxies.
 
 **Files to modify**:
 
 **Backend**:
-- `forks-fastify-api/src/routes/orders/index.ts` — Replace the WebSocket route (`/api/orders/ws`) with an SSE endpoint (e.g., `GET /api/orders/stream`). Use Fastify reply streaming: `reply.raw.write()` with `Content-Type: text/event-stream`.
-- `forks-fastify-api/src/utils/websocket-manager.ts` — Refactor to `SSEManager`. Instead of WebSocket connections, track `ServerResponse` objects. Broadcast via `res.write(`data: ${JSON.stringify(payload)}\n\n`)`.
+- `ayile-fastify-api/src/routes/orders/index.ts` — Replace the WebSocket route (`/api/orders/ws`) with an SSE endpoint (e.g., `GET /api/orders/stream`). Use Fastify reply streaming: `reply.raw.write()` with `Content-Type: text/event-stream`.
+- `ayile-fastify-api/src/utils/websocket-manager.ts` — Refactor to `SSEManager`. Instead of WebSocket connections, track `ServerResponse` objects. Broadcast via `res.write(`data: ${JSON.stringify(payload)}\n\n`)`.
 - Add REST endpoints for subscribe/unsubscribe since SSE is one-directional:
   - `POST /api/orders/subscribe` — Register interest in specific order/restaurant.
   - `POST /api/orders/unsubscribe` — Deregister.
 - Or simpler: use query params on the SSE endpoint: `GET /api/orders/stream?restaurantId=xxx` or `GET /api/orders/stream?orderId=xxx`.
 
 **Frontend**:
-- `Forks/services/websocketService.ts` — Replace with `sseService.ts`. Use `EventSource` API (or `react-native-sse` polyfill since React Native doesn't have native EventSource). Subscribe via URL query params.
-- `Forks/app/(staff)/dashboard.tsx` — Update WebSocket references to SSE service.
-- `Forks/app/(tabs)/order.tsx` — Update WebSocket references to SSE service.
+- `Ayile/services/websocketService.ts` — Replace with `sseService.ts`. Use `EventSource` API (or `react-native-sse` polyfill since React Native doesn't have native EventSource). Subscribe via URL query params.
+- `Ayile/app/(staff)/dashboard.tsx` — Update WebSocket references to SSE service.
+- `Ayile/app/(tabs)/order.tsx` — Update WebSocket references to SSE service.
 
 **Consideration**: React Native does not have a built-in `EventSource`. You'll need `react-native-sse` or a fetch-based SSE polyfill. Evaluate if the simplification is worth the migration effort.
 

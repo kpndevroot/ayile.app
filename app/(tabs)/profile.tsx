@@ -130,7 +130,7 @@ export default function ProfileScreen() {
               <MaterialIcons name="person" size={40} color="#A68B6B" />
             </YStack>
             <Text fontSize={24} fontWeight="700" color="$brown9" textAlign="center">
-              Welcome to Forks
+              Welcome to Ayile
             </Text>
             <Text fontSize={16} color="$lightBrown5" textAlign="center">
               Log in to view your profile, track orders, and more.

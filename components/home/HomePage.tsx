@@ -187,7 +187,7 @@ export function HomePage({
       );
 
       // Trigger cart refresh
-      await AsyncStorage.setItem('@forks_refresh_cart', 'true');
+      await AsyncStorage.setItem('@ayile_refresh_cart', 'true');
       await loadCartData();
     } catch (error) {
       console.error('Error adding item to cart from modal:', error);
@@ -256,7 +256,7 @@ export function HomePage({
         await StorageService.updateLocalCartItem(item.id, newQuantity, quantityOptionId);
       }
 
-      await AsyncStorage.setItem('@forks_refresh_cart', 'true');
+      await AsyncStorage.setItem('@ayile_refresh_cart', 'true');
       await loadCartData();
     } catch (error) {
       console.error('Error updating quantity:', error);
@@ -275,7 +275,7 @@ export function HomePage({
           <YStack gap="$6" padding="$6" alignItems="center" justifyContent="center" flex={1}>
             <YStack gap="$4" alignItems="center" maxWidth={400} width="100%">
               <Text fontSize="$10" fontWeight="bold" textAlign="center">
-                Welcome to Forks! 🍴
+                Welcome to Ayile! 🍴
               </Text>
               <Text fontSize="$6" color="$gray11" textAlign="center">
                 Scan a QR code to view restaurant menu
