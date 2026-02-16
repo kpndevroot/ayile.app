@@ -159,7 +159,7 @@ export default function ReadyForDeliveryScreen() {
         <TouchableOpacity>
           <XStack
             alignItems="center"
-            space="$2"
+            gap="$2"
             paddingHorizontal="$3"
             paddingVertical="$2"
             borderRadius={DesignTokens.radius.md}
@@ -181,7 +181,7 @@ export default function ReadyForDeliveryScreen() {
       <XStack
         paddingHorizontal="$4"
         paddingVertical="$2"
-        space="$2"
+        gap="$2"
         borderBottomWidth={1}
         borderBottomColor={DesignTokens.colors.beige[300]}
       >
@@ -239,11 +239,11 @@ export default function ReadyForDeliveryScreen() {
       <XStack
         paddingHorizontal="$4"
         paddingVertical="$3"
-        space="$4"
+        gap="$4"
         alignItems="center"
       >
         <TouchableOpacity>
-          <XStack alignItems="center" space="$1">
+          <XStack alignItems="center" gap="$1">
             <ArrowUpDown
               size={18}
               color={DesignTokens.colors.brown[700]}
@@ -257,7 +257,7 @@ export default function ReadyForDeliveryScreen() {
           </XStack>
         </TouchableOpacity>
         <TouchableOpacity>
-          <XStack alignItems="center" space="$1">
+          <XStack alignItems="center" gap="$1">
             <Gauge
               size={18}
               color={DesignTokens.colors.brown[700]}
@@ -271,7 +271,7 @@ export default function ReadyForDeliveryScreen() {
           </XStack>
         </TouchableOpacity>
         <TouchableOpacity>
-          <XStack alignItems="center" space="$1">
+          <XStack alignItems="center" gap="$1">
             <Wallet
               size={18}
               color={DesignTokens.colors.brown[700]}
@@ -293,7 +293,7 @@ export default function ReadyForDeliveryScreen() {
         </YStack>
       ) : (
         <ScrollView showsVerticalScrollIndicator={false}>
-          <YStack padding="$4" space="$3">
+          <YStack padding="$4" gap="$3">
             {currentOrders.length === 0 ? (
               <YStack alignItems="center" justifyContent="center" padding="$8">
                 <Text

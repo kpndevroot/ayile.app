@@ -227,7 +227,7 @@ export function MenuItemCustomizationModal({
             contentContainerStyle={styles.scrollContent}
           >
             {/* Item Details */}
-            <YStack padding="$4" space="$3">
+            <YStack padding="$4" gap="$3">
               <XStack alignItems="center" justifyContent="space-between" marginBottom="$2">
                 <YStack flex={1}>
                   <Text
@@ -238,7 +238,7 @@ export function MenuItemCustomizationModal({
                   >
                     {item.name}
                   </Text>
-                  <XStack alignItems="center" space="$1">
+                  <XStack alignItems="center" gap="$1">
                     <MaterialIcons
                       name="star"
                       size={18}
@@ -266,7 +266,7 @@ export function MenuItemCustomizationModal({
               )}
 
               {/* Choose Quantity Section */}
-              <YStack space="$2" marginTop="$4">
+              <YStack gap="$2" marginTop="$4">
                 <Text
                   fontSize={DesignTokens.typography.fontSize.lg}
                   fontWeight={DesignTokens.typography.fontWeight.bold}
@@ -303,7 +303,7 @@ export function MenuItemCustomizationModal({
                             <MaterialIcons name="check" size={14} color={DesignTokens.colors.neutral.white} />
                           )}
                         </XStack>
-                        <YStack space="$1">
+                        <YStack gap="$1">
                           <Text
                             fontSize={DesignTokens.typography.fontSize.md}
                             fontWeight={DesignTokens.typography.fontWeight.bold}
@@ -335,7 +335,7 @@ export function MenuItemCustomizationModal({
 
               {/* Complete your meal Section */}
               {displayAddOns.length > 0 && (
-                <YStack space="$2" marginTop="$4">
+                <YStack gap="$2" marginTop="$4">
                   <Text
                     fontSize={DesignTokens.typography.fontSize.lg}
                     fontWeight={DesignTokens.typography.fontWeight.bold}
@@ -344,7 +344,7 @@ export function MenuItemCustomizationModal({
                     Complete your meal
                   </Text>
 
-                  <YStack space="$2">
+                  <YStack gap="$2">
                     {displayAddOns.map((addOn) => {
                       const isSelected = selectedAddOns.has(addOn.id);
                       return (
@@ -402,12 +402,12 @@ export function MenuItemCustomizationModal({
             borderTopColor={DesignTokens.colors.beige[300]}
             alignItems="center"
             justifyContent="space-between"
-            space="$3"
+            gap="$3"
           >
             {/* Quantity Selector */}
             <XStack
               alignItems="center"
-              space="$2"
+              gap="$2"
               backgroundColor={DesignTokens.colors.beige[200]}
               borderRadius={DesignTokens.radius.lg}
               paddingHorizontal="$2"

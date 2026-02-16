@@ -80,7 +80,7 @@ export function StatusBadge({ type, label, icon }: StatusBadgeProps) {
   return (
     <XStack
       alignItems="center"
-      space="$1.5"
+      gap="$1.5"
       paddingHorizontal="$2"
       paddingVertical="$1"
       borderRadius={DesignTokens.radius.full}

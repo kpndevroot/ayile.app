@@ -65,10 +65,10 @@ export function DashboardOrderCard({
         elevation: 3,
       }}
     >
-      <YStack space="$4">
+      <YStack gap="$4">
         {/* Header - Enhanced visual hierarchy */}
         <XStack justifyContent="space-between" alignItems="center">
-          <XStack alignItems="center" space="$3">
+          <XStack alignItems="center" gap="$3">
             <XStack
               width={20}
               height={20}
@@ -100,7 +100,7 @@ export function DashboardOrderCard({
         </XStack>
 
         {/* Location and Items Info */}
-        <YStack space="$2">
+        <YStack gap="$2">
           <Text
             fontSize={14}
             color={DesignTokens.colors.lightBrown[600]}
@@ -119,7 +119,7 @@ export function DashboardOrderCard({
             {/* Payment Status Badge - Enhanced visibility */}
             <XStack
               alignItems="center"
-              space="$2"
+              gap="$2"
               paddingHorizontal="$3"
               paddingVertical="$2"
               borderRadius={DesignTokens.radius.md}
@@ -152,7 +152,7 @@ export function DashboardOrderCard({
 
         {/* Action Buttons - Enhanced touch targets */}
         {order.status === 'pending' && (
-          <XStack space="$3" marginTop="$2">
+          <XStack gap="$3" marginTop="$2">
             <TouchableOpacity
               style={{ flex: 1 }}
               onPress={() => onReject(order.id)}
@@ -221,7 +221,7 @@ export function DashboardOrderCard({
         )}
 
         {order.status !== 'pending' && (
-          <XStack space="$3" marginTop="$2">
+          <XStack gap="$3" marginTop="$2">
             {/* Mark as Paid Button - Enhanced visibility */}
             {onMarkAsPaid && (
               <TouchableOpacity
@@ -238,7 +238,7 @@ export function DashboardOrderCard({
                   backgroundColor={isPaid ? DesignTokens.colors.semantic.success : DesignTokens.colors.orange[500]}
                   alignItems="center"
                   justifyContent="center"
-                  space="$3"
+                  gap="$3"
                   style={{
                     shadowColor: isPaid ? DesignTokens.colors.semantic.success : DesignTokens.colors.orange[500],
                     shadowOffset: { width: 0, height: 3 },

@@ -383,7 +383,7 @@ export default function CartScreen() {
         onRequestClose={() => setShowTableModal(false)}
       >
         <YStack flex={1} backgroundColor="rgba(0,0,0,0.5)" alignItems="center" justifyContent="center" padding={20}>
-          <YStack backgroundColor="white" borderRadius={16} padding={24} width="100%" maxWidth={340} space="$4">
+          <YStack backgroundColor="white" borderRadius={16} padding={24} width="100%" maxWidth={340} gap="$4">
             <Text fontSize={20} fontWeight="700" color="#4A3B32" textAlign="center">
               Enter Table Number
             </Text>
@@ -402,7 +402,7 @@ export default function CartScreen() {
               autoFocus
             />
 
-            <XStack space="$3" marginTop="$2">
+            <XStack gap="$3" marginTop="$2">
               <TouchableOpacity
                 style={[styles.modalButton, styles.cancelButton]}
                 onPress={() => {

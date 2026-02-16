@@ -177,7 +177,7 @@ export default function OrderDetailScreen() {
         alignItems="center"
         justifyContent="space-between"
       >
-        <XStack alignItems="center" space="$2">
+        <XStack alignItems="center" gap="$2">
           <TouchableOpacity onPress={() => router.back()}>
             <ArrowLeft size={24} color={DesignTokens.colors.brown[900]} />
           </TouchableOpacity>
@@ -195,7 +195,7 @@ export default function OrderDetailScreen() {
       </XStack>
 
       <ScrollView showsVerticalScrollIndicator={false}>
-        <YStack padding="$4" space="$4">
+        <YStack padding="$4" gap="$4">
           {/* Status Progress Bar - Enhanced for accessibility and visual hierarchy */}
           <YStack
             backgroundColor={DesignTokens.colors.neutral.white}
@@ -327,7 +327,7 @@ export default function OrderDetailScreen() {
           </YStack>
 
           {/* Customer Info Section - Enhanced with better spacing and visual hierarchy */}
-          <YStack space="$2">
+          <YStack gap="$2">
             <Text
               fontSize={DesignTokens.typography.fontSize.md}
               fontWeight="700"
@@ -341,7 +341,7 @@ export default function OrderDetailScreen() {
               backgroundColor={DesignTokens.colors.neutral.white}
               borderRadius="$4"
               padding="$4"
-              space="$4"
+              gap="$4"
               style={{
                 shadowColor: DesignTokens.colors.brown[900],
                 shadowOffset: { width: 0, height: 2 },
@@ -350,7 +350,7 @@ export default function OrderDetailScreen() {
                 elevation: 2,
               }}
             >
-              <XStack alignItems="center" space="$3">
+              <XStack alignItems="center" gap="$3">
                 <YStack
                   width={40}
                   height={40}
@@ -373,7 +373,7 @@ export default function OrderDetailScreen() {
               <XStack height={1} backgroundColor={DesignTokens.colors.beige[200]} />
 
               <TouchableOpacity activeOpacity={0.7}>
-                <XStack alignItems="center" space="$3" paddingVertical="$1">
+                <XStack alignItems="center" gap="$3" paddingVertical="$1">
                   <YStack
                     width={40}
                     height={40}
@@ -392,7 +392,7 @@ export default function OrderDetailScreen() {
 
               <XStack height={1} backgroundColor={DesignTokens.colors.beige[200]} />
 
-              <XStack alignItems="center" space="$3" paddingVertical="$1">
+              <XStack alignItems="center" gap="$3" paddingVertical="$1">
                 <YStack
                   width={40}
                   height={40}
@@ -416,7 +416,7 @@ export default function OrderDetailScreen() {
           </YStack>
 
           {/* Order Items Section - Enhanced with better visual hierarchy */}
-          <YStack space="$2">
+          <YStack gap="$2">
             <Text
               fontSize={DesignTokens.typography.fontSize.md}
               fontWeight="700"
@@ -430,7 +430,7 @@ export default function OrderDetailScreen() {
               backgroundColor={DesignTokens.colors.neutral.white}
               borderRadius="$4"
               padding="$4"
-              space="$3"
+              gap="$3"
               style={{
                 shadowColor: DesignTokens.colors.brown[900],
                 shadowOffset: { width: 0, height: 2 },
@@ -441,8 +441,8 @@ export default function OrderDetailScreen() {
             >
               {items.map((item: any, index: number) => (
                 <YStack key={index}>
-                  <XStack justifyContent="space-between" alignItems="flex-start" space="$3">
-                    <XStack flex={1} space="$3" alignItems="flex-start">
+                  <XStack justifyContent="space-between" alignItems="flex-start" gap="$3">
+                    <XStack flex={1} gap="$3" alignItems="flex-start">
                       <YStack
                         minWidth={32}
                         height={32}
@@ -460,7 +460,7 @@ export default function OrderDetailScreen() {
                           {item.name}
                         </Text>
                         {item.modifications && (
-                          <YStack marginTop="$1" space="$1">
+                          <YStack marginTop="$1" gap="$1">
                             {item.modifications.map((mod: string, modIndex: number) => (
                               <Text key={modIndex} fontSize={13} color={DesignTokens.colors.lightBrown[500]} fontStyle="italic">
                                 • {mod}
@@ -482,7 +482,7 @@ export default function OrderDetailScreen() {
 
           {/* Special Instructions Section - Enhanced visual treatment */}
           {order.specialInstructions && (
-            <YStack space="$2">
+            <YStack gap="$2">
               <Text
                 fontSize={DesignTokens.typography.fontSize.md}
                 fontWeight="700"
@@ -514,7 +514,7 @@ export default function OrderDetailScreen() {
           )}
 
           {/* Pricing Section - Enhanced visual hierarchy */}
-          <YStack space="$2">
+          <YStack gap="$2">
             <Text
               fontSize={DesignTokens.typography.fontSize.md}
               fontWeight="700"
@@ -528,7 +528,7 @@ export default function OrderDetailScreen() {
               backgroundColor={DesignTokens.colors.neutral.white}
               borderRadius="$4"
               padding="$4"
-              space="$3"
+              gap="$3"
               style={{
                 shadowColor: DesignTokens.colors.brown[900],
                 shadowOffset: { width: 0, height: 2 },
@@ -537,7 +537,7 @@ export default function OrderDetailScreen() {
                 elevation: 2,
               }}
             >
-              <YStack space="$3">
+              <YStack gap="$3">
                 <XStack justifyContent="space-between" alignItems="center">
                   <Text fontSize={14} color={DesignTokens.colors.lightBrown[500]}>Subtotal</Text>
                   <Text fontSize={15} fontWeight="600" color={DesignTokens.colors.brown[900]}>{pricing.subtotal}</Text>
@@ -559,7 +559,7 @@ export default function OrderDetailScreen() {
                 </XStack>
 
                 {/* Payment Status Section - Enhanced with better touch targets */}
-                <YStack marginTop="$4" space="$2">
+                <YStack marginTop="$4" gap="$2">
                   <TouchableOpacity
                     onPress={handleTogglePaymentStatus}
                     activeOpacity={0.7}
@@ -582,7 +582,7 @@ export default function OrderDetailScreen() {
                         elevation: 3,
                       }}
                     >
-                      <XStack alignItems="center" space="$3" flex={1}>
+                      <XStack alignItems="center" gap="$3" flex={1}>
                         <YStack
                           width={48}
                           height={48}
@@ -597,7 +597,7 @@ export default function OrderDetailScreen() {
                             <CreditCard size={28} color="#FFFFFF" />
                           )}
                         </YStack>
-                        <YStack flex={1} space="$1">
+                        <YStack flex={1} gap="$1">
                           <Text
                             fontSize={16}
                             color={isPaid ? DesignTokens.colors.semantic.success : DesignTokens.colors.orange[800]}
@@ -646,7 +646,7 @@ export default function OrderDetailScreen() {
         <YStack
           padding="$4"
           paddingBottom={insets.bottom + 16}
-          space="$4"
+          gap="$4"
           backgroundColor={DesignTokens.colors.background.light}
           borderTopWidth={1}
           borderTopColor={DesignTokens.colors.beige[200]}

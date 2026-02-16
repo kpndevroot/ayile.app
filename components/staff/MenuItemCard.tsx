@@ -21,7 +21,7 @@ const MenuItemCard = React.memo(function MenuItemCard({ item, onUploadImage, onD
       backgroundColor={DesignTokens.colors.background.card}
       borderRadius={DesignTokens.radius.md}
       padding="$3"
-      space="$3"
+      gap="$3"
       alignItems="center"
       style={DesignTokens.shadows.sm}
     >
@@ -50,7 +50,7 @@ const MenuItemCard = React.memo(function MenuItemCard({ item, onUploadImage, onD
       )}
 
       {/* Info */}
-      <YStack flex={1} space="$1">
+      <YStack flex={1} gap="$1">
         <Text
           fontSize={DesignTokens.typography.fontSize.md}
           fontWeight={DesignTokens.typography.fontWeight.semibold}
@@ -59,7 +59,7 @@ const MenuItemCard = React.memo(function MenuItemCard({ item, onUploadImage, onD
         >
           {item.name}
         </Text>
-        <XStack space="$2" alignItems="center">
+        <XStack gap="$2" alignItems="center">
           {item.category?.name && (
             <Text
               fontSize={DesignTokens.typography.fontSize.xs}
@@ -94,7 +94,7 @@ const MenuItemCard = React.memo(function MenuItemCard({ item, onUploadImage, onD
       </YStack>
 
       {/* Actions */}
-      <YStack space="$2">
+      <YStack gap="$2">
         <TouchableOpacity onPress={() => onUploadImage(item)}>
           <YStack
             width={36}

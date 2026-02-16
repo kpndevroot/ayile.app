@@ -36,7 +36,7 @@ export function OrdersList({
         borderRadius="lg"
         shadow="sm"
       >
-        <YStack alignItems="center" space="$2">
+        <YStack alignItems="center" gap="$2">
           <Text
             fontSize={DesignTokens.typography.fontSize.lg}
             color={DesignTokens.colors.brown[700]}
@@ -59,7 +59,7 @@ export function OrdersList({
   }
 
   return (
-    <YStack space="$3">
+    <YStack gap="$3">
       {orders.map((order) => (
         <DashboardOrderCard
           key={order.id}

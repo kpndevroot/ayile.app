@@ -104,7 +104,7 @@ export default function RestaurantSettingsScreen() {
   const renderEmpty = () => {
     if (loading) return null;
     return (
-      <YStack flex={1} alignItems="center" justifyContent="center" padding="$6" space="$3">
+      <YStack flex={1} alignItems="center" justifyContent="center" padding="$6" gap="$3">
         <Text
           fontSize={DesignTokens.typography.fontSize.lg}
           fontWeight={DesignTokens.typography.fontWeight.semibold}
@@ -127,7 +127,7 @@ export default function RestaurantSettingsScreen() {
             paddingVertical="$3"
             borderRadius={DesignTokens.radius.md}
             alignItems="center"
-            space="$2"
+            gap="$2"
             marginTop="$2"
           >
             <Plus size={18} color={DesignTokens.colors.neutral.white} />

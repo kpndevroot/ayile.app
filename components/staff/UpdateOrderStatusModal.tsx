@@ -82,7 +82,7 @@ export function UpdateOrderStatusModal({
             borderTopRightRadius: DesignTokens.radius.xl,
           }}
         >
-          <YStack space="$5">
+          <YStack gap="$5">
             {/* Handle */}
             <XStack alignItems="center" justifyContent="center" paddingBottom="$2">
               <XStack
@@ -94,7 +94,7 @@ export function UpdateOrderStatusModal({
             </XStack>
 
             {/* Header */}
-            <YStack space="$1">
+            <YStack gap="$1">
               <Text
                 fontSize={DesignTokens.typography.fontSize['2xl']}
                 fontWeight={DesignTokens.typography.fontWeight.bold}
@@ -113,7 +113,7 @@ export function UpdateOrderStatusModal({
             </YStack>
 
             {/* Status Selection */}
-            <YStack space="$3">
+            <YStack gap="$3">
               <Text
                 fontSize={DesignTokens.typography.fontSize.md}
                 fontWeight={DesignTokens.typography.fontWeight.bold}
@@ -121,7 +121,7 @@ export function UpdateOrderStatusModal({
               >
                 Select Next Status
               </Text>
-              <YStack space="$2">
+              <YStack gap="$2">
                 {statusOptions.map((option) => {
                   const isSelected = selectedStatus === option.value;
                   return (
@@ -145,7 +145,7 @@ export function UpdateOrderStatusModal({
                             : DesignTokens.colors.beige[300],
                         }}
                       >
-                        <XStack space="$3" alignItems="flex-start">
+                        <XStack gap="$3" alignItems="flex-start">
                           <XStack marginTop="$0.5">
                             {isSelected ? (
                               <Circle
@@ -161,7 +161,7 @@ export function UpdateOrderStatusModal({
                               />
                             )}
                           </XStack>
-                          <YStack flex={1} space="$1">
+                          <YStack flex={1} gap="$1">
                             <Text
                               fontSize={DesignTokens.typography.fontSize.md}
                               fontWeight={DesignTokens.typography.fontWeight.semibold}
@@ -185,7 +185,7 @@ export function UpdateOrderStatusModal({
             </YStack>
 
             {/* Estimated Time */}
-            <YStack space="$2">
+            <YStack gap="$2">
               <Text
                 fontSize={DesignTokens.typography.fontSize.md}
                 fontWeight={DesignTokens.typography.fontWeight.bold}
@@ -195,7 +195,7 @@ export function UpdateOrderStatusModal({
               </Text>
               <XStack
                 alignItems="center"
-                space="$2"
+                gap="$2"
                 paddingHorizontal="$3"
                 paddingVertical="$2"
                 backgroundColor={DesignTokens.colors.beige[100]}
@@ -224,30 +224,30 @@ export function UpdateOrderStatusModal({
 
             {/* Action Buttons */}
             {currentStatus !== 'DELIVERED' ? (
-              <YStack space="$2">
-              <Button
-                onPress={handleUpdate}
-                variant="primary"
-                fullWidth
-                style={{
-                  backgroundColor: DesignTokens.colors.orange[500],
-                }}
-              >
-                Update Status
-              </Button>
-              <TouchableOpacity onPress={onClose}>
-                <Text
-                  fontSize={DesignTokens.typography.fontSize.md}
-                  color={DesignTokens.colors.brown[700]}
-                  textAlign="center"
-                  paddingVertical="$2"
+              <YStack gap="$2">
+                <Button
+                  onPress={handleUpdate}
+                  variant="primary"
+                  fullWidth
+                  style={{
+                    backgroundColor: DesignTokens.colors.orange[500],
+                  }}
                 >
-                  Cancel
-                </Text>
-              </TouchableOpacity>
-            </YStack>
+                  Update Status
+                </Button>
+                <TouchableOpacity onPress={onClose}>
+                  <Text
+                    fontSize={DesignTokens.typography.fontSize.md}
+                    color={DesignTokens.colors.brown[700]}
+                    textAlign="center"
+                    paddingVertical="$2"
+                  >
+                    Cancel
+                  </Text>
+                </TouchableOpacity>
+              </YStack>
             ) : null}
-            
+
           </YStack>
         </Card>
       </YStack>

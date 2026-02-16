@@ -98,7 +98,11 @@ export const DesignTokens = {
       900: '#1F1F1F',  // Darker charcoal
       950: '#0A0A0A',
     },
-    
+
+    white: {
+      100: '#FDFDFD',
+    },
+
     // Legacy color mappings for backward compatibility
     primary: {
       green: '#22C55E', // Success, delivery status

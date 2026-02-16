@@ -60,10 +60,10 @@ const OrderCard = React.memo(function OrderCard({
         elevation: 3,
       }}
     >
-      <YStack space="$4">
+      <YStack gap="$4">
         {/* Order Header - Enhanced visual hierarchy */}
         <XStack justifyContent="space-between" alignItems="center">
-          <YStack space="$1" flex={1}>
+          <YStack gap="$1" flex={1}>
             <Text
               fontSize={18}
               fontWeight="700"
@@ -79,7 +79,7 @@ const OrderCard = React.memo(function OrderCard({
               {timeAgo}
             </Text>
           </YStack>
-          <XStack space="$2">
+          <XStack gap="$2">
             <YStack
               backgroundColor={DesignTokens.colors.teal[500]}
               borderRadius={DesignTokens.radius.md}
@@ -120,8 +120,8 @@ const OrderCard = React.memo(function OrderCard({
         </XStack>
 
         {/* Customer Info - Improved layout */}
-        <YStack space="$3">
-          <XStack alignItems="center" space="$3" justifyContent="space-between">
+        <YStack gap="$3">
+          <XStack alignItems="center" gap="$3" justifyContent="space-between">
             <Text
               fontSize={16}
               fontWeight="700"
@@ -153,8 +153,8 @@ const OrderCard = React.memo(function OrderCard({
             )}
           </XStack>
           {deliveryAddress && (
-            <XStack justifyContent="space-between" alignItems="center" space="$2">
-              <XStack flex={1} alignItems="center" space="$2">
+            <XStack justifyContent="space-between" alignItems="center" gap="$2">
+              <XStack flex={1} alignItems="center" gap="$2">
                 <MapPin size={16} color={DesignTokens.colors.lightBrown[500]} />
                 <Text
                   fontSize={14}
@@ -169,7 +169,7 @@ const OrderCard = React.memo(function OrderCard({
                 <TouchableOpacity onPress={onViewMap} activeOpacity={0.7}>
                   <XStack
                     alignItems="center"
-                    space="$1"
+                    gap="$1"
                     paddingHorizontal="$3"
                     paddingVertical="$2"
                     borderRadius={DesignTokens.radius.md}
@@ -192,7 +192,7 @@ const OrderCard = React.memo(function OrderCard({
 
         {/* Order Details Grid - Enhanced spacing */}
         <XStack
-          space="$3"
+          gap="$3"
           paddingVertical="$3"
           paddingHorizontal="$3"
           backgroundColor={DesignTokens.colors.beige[50]}
@@ -267,7 +267,7 @@ const OrderCard = React.memo(function OrderCard({
         {/* Special Instructions - Enhanced visibility */}
         {specialInstructions && (
           <YStack
-            space="$2"
+            gap="$2"
             padding="$3"
             backgroundColor={DesignTokens.colors.orange[50]}
             borderRadius={DesignTokens.radius.md}

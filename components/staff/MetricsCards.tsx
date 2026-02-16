@@ -99,7 +99,7 @@ export function MetricsCards({ metrics, pendingPulse }: MetricsCardsProps) {
             shadow="sm"
             style={{ flex: 1 }}
           >
-            <YStack space="$1">
+            <YStack gap="$1">
               <Text
                 fontSize={DesignTokens.typography.fontSize.sm}
                 color={DesignTokens.colors.brown[700]}

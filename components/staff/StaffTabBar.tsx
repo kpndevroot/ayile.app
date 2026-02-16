@@ -52,7 +52,7 @@ export function StaffTabBar({ state, descriptors, navigation }: BottomTabBarProp
               accessibilityState={{ selected: isFocused }}
               accessibilityLabel={tab.label}
             >
-              <YStack alignItems="center" space="$1">
+              <YStack alignItems="center" gap="$1">
                 <MaterialIcons
                   name={tab.icon as any}
                   size={26}

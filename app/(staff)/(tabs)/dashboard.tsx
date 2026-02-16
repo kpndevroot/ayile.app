@@ -254,7 +254,7 @@ export default function StaffDashboardScreen() {
             />
           }
         >
-          <YStack padding="$4" space="$4">
+          <YStack padding="$4" gap="$4">
             {/* Metrics Cards */}
             <MetricsCards metrics={metrics} pendingPulse={pendingPulse} />
 

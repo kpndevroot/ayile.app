@@ -82,7 +82,7 @@ export default function EditMenuItemScreen() {
         paddingVertical="$3"
         alignItems="center"
       >
-        <XStack alignItems="center" space="$2">
+        <XStack alignItems="center" gap="$2">
           <TouchableOpacity onPress={() => router.back()}>
             <ArrowLeft size={24} color={DesignTokens.colors.brown[900]} />
           </TouchableOpacity>
@@ -97,7 +97,7 @@ export default function EditMenuItemScreen() {
       </XStack>
 
       {loading ? (
-        <YStack padding="$4" space="$4">
+        <YStack padding="$4" gap="$4">
           <Skeleton width="100%" height={200} />
           <Skeleton width="60%" height={20} />
           <Skeleton width="100%" height={48} />

@@ -109,7 +109,7 @@ export default function KitchenOrdersScreen() {
       <XStack
         paddingHorizontal="$4"
         paddingBottom="$3"
-        space="$2"
+        gap="$2"
       >
         {(['pending', 'preparing', 'all'] as OrderStatus[]).map((tab) => (
           <TouchableOpacity
@@ -150,7 +150,7 @@ export default function KitchenOrdersScreen() {
         </YStack>
       ) : (
         <ScrollView showsVerticalScrollIndicator={false}>
-          <YStack padding="$4" space="$3">
+          <YStack padding="$4" gap="$3">
             {filteredOrders.length === 0 ? (
               <YStack alignItems="center" justifyContent="center" padding="$8">
                 <Text

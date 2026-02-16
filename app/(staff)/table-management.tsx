@@ -114,7 +114,7 @@ export default function TableManagementScreen() {
         </YStack>
       ) : (
         <ScrollView showsVerticalScrollIndicator={false}>
-          <YStack padding="$4" space="$3">
+          <YStack padding="$4" gap="$3">
             {tables.length === 0 ? (
               <YStack alignItems="center" justifyContent="center" padding="$8">
                 <Text
@@ -126,70 +126,70 @@ export default function TableManagementScreen() {
               </YStack>
             ) : (
               tables.map((table) => (
-            <Card
-              key={table.id}
-              padding="md"
-              backgroundColor={DesignTokens.colors.beige[200]}
-              borderRadius="md"
-              shadow="md"
-            >
-              <YStack space="$2">
-                <XStack justifyContent="space-between" alignItems="center">
-                  <Text
-                    fontSize={DesignTokens.typography.fontSize.xl}
-                    fontWeight={DesignTokens.typography.fontWeight.bold}
-                    color={DesignTokens.colors.brown[900]}
-                  >
-                    Table {table.tableNumber}
-                  </Text>
-                  <Text
-                    fontSize={DesignTokens.typography.fontSize.sm}
-                    color={
-                      table.status === 'active'
-                        ? DesignTokens.colors.teal[500]
-                        : DesignTokens.colors.lightBrown[500]
-                    }
-                    fontWeight={DesignTokens.typography.fontWeight.semibold}
-                  >
-                    {table.status === 'active' ? 'Active' : 'Available'}
-                  </Text>
-                </XStack>
-                <Text
-                  fontSize={DesignTokens.typography.fontSize.sm}
-                  color={DesignTokens.colors.lightBrown[500]}
+                <Card
+                  key={table.id}
+                  padding="md"
+                  backgroundColor={DesignTokens.colors.beige[200]}
+                  borderRadius="md"
+                  shadow="md"
                 >
-                  Seats: {table.seats}
-                </Text>
-                {table.orderId && (
-                  <Text
-                    fontSize={DesignTokens.typography.fontSize.sm}
-                    color={DesignTokens.colors.lightBrown[500]}
-                  >
-                    Order {table.orderId}
-                  </Text>
-                )}
-                <TouchableOpacity
-                  onPress={() => handleShowQR(table.id)}
-                >
-                  <XStack
-                    marginTop="$2"
-                    paddingVertical="$2"
-                    paddingHorizontal="$3"
-                    borderRadius={DesignTokens.radius.md}
-                    backgroundColor={DesignTokens.colors.orange[500]}
-                    alignItems="center"
-                    justifyContent="center"
-                  >
+                  <YStack gap="$2">
+                    <XStack justifyContent="space-between" alignItems="center">
+                      <Text
+                        fontSize={DesignTokens.typography.fontSize.xl}
+                        fontWeight={DesignTokens.typography.fontWeight.bold}
+                        color={DesignTokens.colors.brown[900]}
+                      >
+                        Table {table.tableNumber}
+                      </Text>
+                      <Text
+                        fontSize={DesignTokens.typography.fontSize.sm}
+                        color={
+                          table.status === 'active'
+                            ? DesignTokens.colors.teal[500]
+                            : DesignTokens.colors.lightBrown[500]
+                        }
+                        fontWeight={DesignTokens.typography.fontWeight.semibold}
+                      >
+                        {table.status === 'active' ? 'Active' : 'Available'}
+                      </Text>
+                    </XStack>
                     <Text
-                      color={DesignTokens.colors.neutral.white}
-                      fontWeight={DesignTokens.typography.fontWeight.semibold}
+                      fontSize={DesignTokens.typography.fontSize.sm}
+                      color={DesignTokens.colors.lightBrown[500]}
                     >
-                      View QR Code
+                      Seats: {table.seats}
                     </Text>
-                  </XStack>
-                </TouchableOpacity>
-              </YStack>
-            </Card>
+                    {table.orderId && (
+                      <Text
+                        fontSize={DesignTokens.typography.fontSize.sm}
+                        color={DesignTokens.colors.lightBrown[500]}
+                      >
+                        Order {table.orderId}
+                      </Text>
+                    )}
+                    <TouchableOpacity
+                      onPress={() => handleShowQR(table.id)}
+                    >
+                      <XStack
+                        marginTop="$2"
+                        paddingVertical="$2"
+                        paddingHorizontal="$3"
+                        borderRadius={DesignTokens.radius.md}
+                        backgroundColor={DesignTokens.colors.orange[500]}
+                        alignItems="center"
+                        justifyContent="center"
+                      >
+                        <Text
+                          color={DesignTokens.colors.neutral.white}
+                          fontWeight={DesignTokens.typography.fontWeight.semibold}
+                        >
+                          View QR Code
+                        </Text>
+                      </XStack>
+                    </TouchableOpacity>
+                  </YStack>
+                </Card>
               ))
             )}
           </YStack>
@@ -215,7 +215,7 @@ export default function TableManagementScreen() {
             borderRadius="xl"
             shadow="lg"
           >
-            <YStack space="$4" alignItems="center">
+            <YStack gap="$4" alignItems="center">
               {/* Header */}
               <XStack
                 width="100%"
@@ -273,7 +273,7 @@ export default function TableManagementScreen() {
               </XStack>
 
               {/* Action Buttons */}
-              <XStack space="$3" width="100%">
+              <XStack gap="$3" width="100%">
                 <TouchableOpacity
                   style={{ flex: 1 }}
                   onPress={() => console.log('Download QR')}
@@ -286,7 +286,7 @@ export default function TableManagementScreen() {
                     backgroundColor={DesignTokens.colors.orange[100]}
                     alignItems="center"
                     justifyContent="center"
-                    space="$2"
+                    gap="$2"
                   >
                     <Download
                       size={18}
@@ -313,7 +313,7 @@ export default function TableManagementScreen() {
                     backgroundColor={DesignTokens.colors.orange[100]}
                     alignItems="center"
                     justifyContent="center"
-                    space="$2"
+                    gap="$2"
                   >
                     <Printer
                       size={18}

@@ -1,9 +1,9 @@
 import React from 'react';
-import { YStack, XStack, Text, Button } from '@tamagui/core';
 import { Card } from '@/components/ui/Card';
 import { StatusBadge, StatusBadgeType } from './StatusBadge';
 import { DesignTokens } from '@/constants/design';
 import { AlertCircle } from '@tamagui/lucide-icons';
+import { XStack, YStack, Text, Button } from 'tamagui'
 
 export interface KitchenOrderItem {
   quantity: number;
@@ -55,7 +55,7 @@ export function KitchenOrderCard({
   return (
     <Card
       padding="md"
-      backgroundColor={DesignTokens.colors.white}
+      backgroundColor={DesignTokens.colors.white[100]}
       borderRadius="md"
       shadow="md"
       style={{
@@ -64,10 +64,10 @@ export function KitchenOrderCard({
           urgency === 'urgent' ? DesignTokens.colors.orange[500] : 'transparent',
       }}
     >
-      <YStack space="$3">
+      <YStack gap="$3">
         {/* Order Header */}
         <XStack justifyContent="space-between" alignItems="flex-start">
-          <YStack space="$1" flex={1}>
+          <YStack gap="$1" flex={1}>
             <Text
               fontSize={DesignTokens.typography.fontSize['2xl']}
               fontWeight={DesignTokens.typography.fontWeight.bold}
@@ -93,7 +93,7 @@ export function KitchenOrderCard({
         />
 
         {/* Order Items */}
-        <YStack space="$1.5">
+        <YStack gap="$1.5">
           {items.map((item, index) => (
             <Text
               key={index}
@@ -114,7 +114,7 @@ export function KitchenOrderCard({
         {allergyAlert && (
           <XStack
             alignItems="center"
-            space="$2"
+            gap="$2"
             padding="$2"
             backgroundColor="#DBEAFE" // Light blue
             borderRadius={DesignTokens.radius.md}
@@ -135,23 +135,19 @@ export function KitchenOrderCard({
         {status === 'pending' && onStartPreparing ? (
           <Button
             onPress={onStartPreparing}
-            variant="primary"
-            fullWidth
             style={{
               backgroundColor: DesignTokens.colors.primary.blue,
             }}
           >
-            <Text color={DesignTokens.colors.white} fontWeight="600">
+            <Text color={DesignTokens.colors.white[100]} fontWeight="600">
               Start Preparing
             </Text>
           </Button>
         ) : status === 'preparing' && onMarkComplete ? (
           <Button
             onPress={onMarkComplete}
-            variant="success"
-            fullWidth
           >
-            <Text color={DesignTokens.colors.white} fontWeight="600">
+            <Text color={DesignTokens.colors.white[100]} fontWeight="600">
               Mark Complete
             </Text>
           </Button>

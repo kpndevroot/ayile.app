@@ -18,7 +18,7 @@ interface TabNavigationProps {
  */
 export function TabNavigation({ activeTab, onTabChange, pendingCount }: TabNavigationProps) {
   return (
-    <XStack space="$2" alignItems="center" marginTop="$2">
+    <XStack gap="$2" alignItems="center" marginTop="$2">
       <TouchableOpacity
         style={{ flex: 1 }}
         onPress={() => onTabChange('pending')}

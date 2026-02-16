@@ -1339,7 +1339,7 @@ const styles = StyleSheet.create({
     borderColor: DesignTokens.colors.orange[500],
   },
   statusCard: {
-    ...DesignTokens.shadows.md,
+    backgroundColor: DesignTokens.colors.beige[100]
   },
   chefImageContainer: {
     alignItems: 'center',
@@ -1349,10 +1349,9 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     borderRadius: 60,
-    backgroundColor: '#2D5016', // Dark green background
+    backgroundColor: '#2D5016', // Dark green background?
     alignItems: 'center',
     justifyContent: 'center',
-    ...DesignTokens.shadows.lg,
   },
   progressCircle: {
     width: 48,
@@ -1360,7 +1359,6 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
-    ...DesignTokens.shadows.sm,
   },
   progressCircleActive: {
     backgroundColor: DesignTokens.colors.orange[500],
@@ -1404,26 +1402,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    ...DesignTokens.shadows.sm,
   },
   bottomButtons: {
     borderTopWidth: 1,
     borderTopColor: DesignTokens.colors.beige[200],
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: -2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 8,
-      },
-    }),
   },
   helpButton: {
     flex: 1,
-    backgroundColor: DesignTokens.colors.beige[200],
+    backgroundColor: DesignTokens.colors.white[100],
     borderRadius: 12,
     paddingVertical: 14,
     paddingHorizontal: 16,
@@ -1440,7 +1426,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    ...DesignTokens.shadows.md,
   },
   tab: {
     flex: 1,
@@ -1486,7 +1471,6 @@ const styles = StyleSheet.create({
     padding: 24,
     width: '90%',
     maxHeight: '80%',
-    ...DesignTokens.shadows.lg,
   },
   confettiContainer: {
     position: 'absolute',
@@ -1514,6 +1498,5 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     flexDirection: 'row',
     alignItems: 'center',
-    ...DesignTokens.shadows.lg,
   },
 });
