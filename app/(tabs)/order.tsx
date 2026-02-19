@@ -120,8 +120,16 @@ export default function OrderTab() {
       if (orderId) {
         const orderData = await fetchOrderDetails(orderId);
         if (orderData) {
-          // If order is DELIVERED or CANCELLED, we still show it until dismissed
-          setOrder(orderData);
+          // Auto-clear completed orders — no need to show them as the active order
+          if (orderData.status === 'DELIVERED' || orderData.status === 'CANCELLED') {
+            await clearOrderData();
+            setOrder(null);
+            if (userData?.id) {
+              await fetchOrderHistory(userData.id);
+            }
+          } else {
+            setOrder(orderData);
+          }
         } else {
           // Order not found, clear it from storage
           await clearOrderData();
@@ -244,6 +252,8 @@ export default function OrderTab() {
           const triggerRefresh = await AsyncStorage.getItem('@forks_refresh_orders');
           if (triggerRefresh === 'true') {
             await AsyncStorage.removeItem('@forks_refresh_orders');
+            // Wait 500ms to avoid race condition with StorageService.setOrderId() writes from cart
+            await new Promise(resolve => setTimeout(resolve, 500));
             await loadData();
           }
         } catch (error) {
@@ -275,6 +285,13 @@ export default function OrderTab() {
           if (message.type === 'order:updated' || message.type === 'order:created') {
             const updatedOrder = message.data as Order;
 
+            // If a brand-new order was created (e.g. user placed a second order),
+            // reload data so the order screen switches to the new one
+            if (message.type === 'order:created') {
+              loadData();
+              return;
+            }
+
             // Notify customer when order is READY
             if (updatedOrder.status === 'READY') {
               const isCurrentOrder = order && updatedOrder.id === order.id;
@@ -301,6 +318,15 @@ export default function OrderTab() {
                   message: 'Enjoy your meal!',
                   duration: 5000,
                 });
+                // Auto-dismiss after 8 seconds — gives time for the celebration animation
+                setTimeout(async () => {
+                  await clearOrderData();
+                  setOrder(null);
+                  setSelectedOrder(null);
+                  if (userData?.id) {
+                    fetchOrderHistory(userData.id);
+                  }
+                }, 8000);
               }
             }
 
@@ -451,6 +477,12 @@ export default function OrderTab() {
         onBack={() => setSelectedOrder(null)}
         onLogout={handleLogout}
         onDismiss={async () => setSelectedOrder(null)}
+        onAutoComplete={async () => {
+          setSelectedOrder(null);
+          if (userData?.id) {
+            await fetchOrderHistory(userData.id);
+          }
+        }}
       />
     );
   }
@@ -465,6 +497,13 @@ export default function OrderTab() {
         onLogout={handleLogout}
         onDismiss={async () => {
           await clearOrderData();
+          if (userData?.id) {
+            await fetchOrderHistory(userData.id);
+          }
+        }}
+        onAutoComplete={async () => {
+          await clearOrderData();
+          setOrder(null);
           if (userData?.id) {
             await fetchOrderHistory(userData.id);
           }

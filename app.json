@@ -35,7 +35,8 @@
       "permissions": [
         "CAMERA"
       ],
-      "usesCleartextTraffic": true
+      "usesCleartextTraffic": true,
+      "package": "com.kpndevroot.ayile"
     },
     "web": {
       "output": "static",
@@ -67,6 +68,12 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "7e2f9652-80ef-4610-bf68-552b34a8b8c9"
+      }
     }
   }
 }

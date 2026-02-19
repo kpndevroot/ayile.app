@@ -142,7 +142,7 @@ export default function OrderDetailScreen() {
 
   const handleTogglePaymentStatus = async () => {
     const newIsPaid = !isPaid;
-    
+
     Alert.alert(
       newIsPaid ? 'Mark as Paid' : 'Mark as Not Paid',
       `Are you sure you want to mark this order as ${newIsPaid ? 'Paid' : 'Not Paid'}?`,

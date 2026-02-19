@@ -334,7 +334,7 @@ export function MenuItemCustomizationModal({
               </YStack>
 
               {/* Complete your meal Section */}
-              {displayAddOns.length > 0 && (
+              {/* {displayAddOns.length > 0 && (
                 <YStack gap="$2" marginTop="$4">
                   <Text
                     fontSize={DesignTokens.typography.fontSize.lg}
@@ -389,7 +389,7 @@ export function MenuItemCustomizationModal({
                     })}
                   </YStack>
                 </YStack>
-              )}
+              )} */}
             </YStack>
           </ScrollView>
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ScrollView, StyleSheet, Alert, ActivityIndicator, TouchableOpacity, View, Image, Platform, RefreshControl, FlatList, Animated } from 'react-native';
+import { ScrollView, StyleSheet, Alert, ActivityIndicator, TouchableOpacity, View, Platform, RefreshControl, FlatList, Animated } from 'react-native';
 import { Text } from '@tamagui/core';
 import { YStack, XStack } from '@tamagui/stacks';
 import { ThemedView } from '@/components/themed-view';
@@ -18,6 +18,8 @@ interface OrderStatusScreenProps {
   onBack: () => void;
   onLogout?: () => void;
   onDismiss: () => Promise<void>;
+  /** Called automatically ~8s after DELIVERED status — use to dismiss the screen */
+  onAutoComplete?: () => Promise<void>;
 }
 
 interface ProgressStep {
@@ -25,6 +27,7 @@ interface ProgressStep {
   label: string;
   icon: string;
   isActive: boolean;
+  date?: string;
 }
 
 /**
@@ -37,7 +40,8 @@ export function OrderStatusScreen({
   restaurant,
   onBack,
   onLogout,
-  onDismiss
+  onDismiss,
+  onAutoComplete,
 }: OrderStatusScreenProps) {
   const router = useRouter();
   const [currentOrder, setCurrentOrder] = useState<Order>(order);
@@ -395,6 +399,22 @@ export function OrderStatusScreen({
     }
   }, []);
 
+  // Sync incoming order prop changes (e.g. WebSocket updates from parent) into local state
+  useEffect(() => {
+    setCurrentOrder(order);
+  }, [order]);
+
+  // Auto-complete: 8 seconds after DELIVERED, call onAutoComplete so parent can dismiss
+  useEffect(() => {
+    if (currentOrder.status !== 'DELIVERED') return;
+    const timer = setTimeout(async () => {
+      if (onAutoComplete) {
+        await onAutoComplete();
+      }
+    }, 8000);
+    return () => clearTimeout(timer);
+  }, [currentOrder.status]);
+
   // Load user data for TopBar
   useEffect(() => {
     const loadUserData = async () => {
@@ -477,11 +497,13 @@ export function OrderStatusScreen({
 
   // Get progress steps based on order status
   const getProgressSteps = (): ProgressStep[] => {
+    const orderDate = formatDate(currentOrder.createdAt);
     const steps: ProgressStep[] = [
-      { id: 'placed', label: 'Order Placed', icon: 'check', isActive: false },
-      { id: 'preparing', label: 'Preparing', icon: 'restaurant', isActive: false },
-      { id: 'ready', label: 'Ready', icon: 'notifications', isActive: false },
-      { id: 'served', label: 'Served', icon: 'restaurant-menu', isActive: false },
+      { id: 'pending', label: 'Pending', icon: 'pending', isActive: false, date: undefined },
+      { id: 'confirmed', label: 'Confirm Order', icon: 'check-circle', isActive: false, date: undefined },
+      { id: 'preparing', label: 'Product Prepared', icon: 'restaurant', isActive: false, date: undefined },
+      { id: 'ready', label: 'Out for Delivery', icon: 'delivery-dining', isActive: false, date: undefined },
+      { id: 'served', label: 'Delivered', icon: 'check-circle', isActive: false, date: undefined },
     ];
 
     // Map order status to progress steps
@@ -489,18 +511,29 @@ export function OrderStatusScreen({
       case 'PENDING':
       case 'CONFIRMED':
         steps[0].isActive = true;
+        steps[0].date = orderDate;
         break;
       case 'PREPARING':
         steps[0].isActive = true;
         steps[1].isActive = true;
+        steps[0].date = orderDate;
+        steps[1].date = orderDate;
         break;
       case 'READY':
         steps[0].isActive = true;
         steps[1].isActive = true;
         steps[2].isActive = true;
+        steps[3].isActive = true;
+        steps[0].date = orderDate;
+        steps[1].date = orderDate;
+        steps[2].date = orderDate;
+        steps[3].date = orderDate;
         break;
       case 'DELIVERED':
-        steps.forEach(step => step.isActive = true);
+        steps.forEach(step => {
+          step.isActive = true;
+          step.date = orderDate;
+        });
         break;
     }
 
@@ -689,7 +722,7 @@ export function OrderStatusScreen({
           <MaterialIcons name="arrow-back" size={24} color="#000000" />
         </TouchableOpacity>
         <Text fontSize={20} fontWeight="700" color={DesignTokens.colors.brown[900]}>
-          {activeTab === 'current' ? 'Order Status' : 'Order History'}
+          {activeTab === 'current' ? 'Track Order' : 'Order History'}
         </Text>
         <View style={styles.backButton} />
       </XStack>
@@ -741,21 +774,6 @@ export function OrderStatusScreen({
             <Text fontSize={14} color={DesignTokens.colors.lightBrown[500]} marginTop={8} textAlign="center">
               You don't have an active order right now
             </Text>
-            <TouchableOpacity
-              style={[styles.orderMoreButton, { marginTop: 24, maxWidth: 200 }]}
-              activeOpacity={0.8}
-              onPress={() => router.push('/(tabs)' as any)}
-            >
-              <MaterialIcons name="shopping-cart" size={20} color="#FFFFFF" />
-              <Text
-                fontSize={16}
-                fontWeight="600"
-                color="#FFFFFF"
-                marginLeft={8}
-              >
-                Browse Menu
-              </Text>
-            </TouchableOpacity>
           </YStack>
         ) : (
           <ScrollView
@@ -769,214 +787,108 @@ export function OrderStatusScreen({
               paddingBottom={100}
               backgroundColor={DesignTokens.colors.background.light}
             >
-              {/* Status Card with Chef Image */}
+              {/* Order Info Header */}
+              <YStack paddingHorizontal={4} marginBottom={16}>
+                <Text
+                  fontSize={16}
+                  fontWeight="700"
+                  color={DesignTokens.colors.orange[500]}
+                  letterSpacing={0.5}
+                >
+                  ORDER #{currentOrder.id.substring(0, 9).toUpperCase()}
+                </Text>
+                <Text
+                  fontSize={13}
+                  color={DesignTokens.colors.lightBrown[500]}
+                  marginTop={4}
+                >
+                  Purchase Date - {formatDate(currentOrder.createdAt)}
+                </Text>
+              </YStack>
+
+              {/* Vertical Timeline Card */}
               <Animated.View
                 style={[
-                  {
-                    backgroundColor: currentOrder.status === 'DELIVERED'
-                      ? '#DCFCE7'
-                      : currentOrder.status === 'READY'
-                        ? readyGlowAnim.interpolate({
-                          inputRange: [0, 1],
-                          outputRange: [DesignTokens.colors.beige[200], '#DCFCE7'],
-                        })
-                        : DesignTokens.colors.beige[200],
-                    borderRadius: 20,
-                    padding: 24,
-                    alignItems: 'center' as const,
-                    marginBottom: 24,
+                  styles.timelineCard,
+                  currentOrder.status === 'DELIVERED' && {
+                    backgroundColor: DesignTokens.colors.white[100],
                   },
-                  styles.statusCard,
                 ]}
               >
-                {/* Chef/Status Image — animated breathing when PREPARING */}
-                <View style={styles.chefImageContainer}>
-                  <Animated.View style={[
-                    styles.chefImageCircle,
-                    currentOrder.status === 'DELIVERED' && {
-                      backgroundColor: DesignTokens.colors.semantic.success,
-                      transform: [{ scale: checkmarkBounceAnim }],
-                    },
-                    currentOrder.status === 'READY' && { backgroundColor: DesignTokens.colors.semantic.success },
-                    currentOrder.status === 'PREPARING' && {
-                      transform: [
-                        { scale: chefBreathAnim },
-                        {
-                          rotate: chefRotateAnim.interpolate({
-                            inputRange: [-1, 0, 1],
-                            outputRange: ['-3deg', '0deg', '3deg'],
-                          })
-                        },
-                      ],
-                    },
-                  ]}>
-                    <MaterialIcons
-                      name={
-                        currentOrder.status === 'DELIVERED'
-                          ? "check-circle"
-                          : currentOrder.status === 'READY'
-                            ? "room-service"
-                            : "restaurant"
-                      }
-                      size={60}
-                      color="#FFFFFF"
-                    />
-                  </Animated.View>
-                </View>
+                {progressSteps.map((step, index) => {
+                  const isActive = step.isActive;
+                  const isLast = index === progressSteps.length - 1;
+                  const nextStep = !isLast ? progressSteps[index + 1] : null;
+                  const isNextActive = nextStep?.isActive || false;
+                  const lineActive = isActive && isNextActive;
+                  const isCurrentStep = isActive && (!nextStep || !nextStep.isActive);
+                  const isDelivered = currentOrder.status === 'DELIVERED';
 
-                {/* Status Message */}
-                <Text
-                  fontSize={18}
-                  fontWeight="700"
-                  color={DesignTokens.colors.brown[900]}
-                  textAlign="center"
-                  marginTop={16}
-                  marginBottom={8}
-                >
-                  {currentOrder.status === 'DELIVERED'
-                    ? 'Your order has been delivered!'
-                    : currentOrder.status === 'READY'
-                      ? 'Your order is ready for pickup!'
-                      : 'Our chefs are working on your order!'}
-                </Text>
+                  return (
+                    <View key={step.id} style={styles.timelineStepRow}>
+                      {/* Left column: circle + connector line */}
+                      <View style={styles.timelineLeftCol}>
+                        {/* Circle */}
+                        <Animated.View
+                          style={[
+                            styles.timelineCircle,
+                            isActive
+                              ? (isDelivered
+                                ? [styles.timelineCircleActive, {
+                                  backgroundColor: cascadeAnims[Math.min(index, cascadeAnims.length - 1)].interpolate({
+                                    inputRange: [0, 1],
+                                    outputRange: [DesignTokens.colors.orange[500], DesignTokens.colors.semantic.success],
+                                  }),
+                                }]
+                                : isCurrentStep
+                                  ? styles.timelineCircleCurrent
+                                  : styles.timelineCircleActive)
+                              : styles.timelineCircleInactive,
+                            isCurrentStep && !isDelivered && {
+                              transform: [{ scale: preparingPulseAnim }],
+                            },
+                          ]}
+                        >
+                          {isActive && (
+                            <View style={styles.timelineCircleInner} />
+                          )}
+                        </Animated.View>
 
-                {/* Estimated Arrival Label */}
-                <Text
-                  fontSize={12}
-                  fontWeight="600"
-                  color={currentOrder.status === 'DELIVERED' ? DesignTokens.colors.semantic.success : DesignTokens.colors.orange[500]}
-                  textTransform="uppercase"
-                  letterSpacing={1}
-                  marginTop={8}
-                >
-                  {currentOrder.status === 'DELIVERED' ? 'STATUS' : 'ESTIMATED ARRIVAL'}
-                </Text>
-
-                {/* Estimated Time — shimmer when PREPARING */}
-                <Animated.View style={
-                  currentOrder.status === 'PREPARING'
-                    ? { opacity: shimmerAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 0.4] }) }
-                    : undefined
-                }>
-                  <Text
-                    fontSize={32}
-                    fontWeight="700"
-                    color={DesignTokens.colors.brown[900]}
-                    marginTop={4}
-                  >
-                    {estimatedArrival}
-                  </Text>
-                </Animated.View>
-              </Animated.View>
-
-              {/* Progress Tracker */}
-              <YStack marginBottom={16}>
-                <View style={styles.progressWrapper}>
-                  {progressSteps.map((step, index) => {
-                    const isActive = step.isActive;
-                    const isLast = index === progressSteps.length - 1;
-                    const nextStep = !isLast ? progressSteps[index + 1] : null;
-                    const isNextActive = nextStep?.isActive || false;
-                    const lineActive = isActive && isNextActive;
-                    const isReadyStep = step.id === 'ready';
-                    const isReadyPulsing = isReadyStep && currentOrder.status === 'READY';
-                    const isPreparingStep = step.id === 'preparing';
-                    const isPreparingPulsing = isPreparingStep && currentOrder.status === 'PREPARING';
-                    const isDelivered = currentOrder.status === 'DELIVERED';
-
-                    // Determine if this connector line is the "leading edge" being animated
-                    const isAnimatingPreparingLine = !isLast && step.id === 'placed' && currentOrder.status === 'PREPARING';
-                    const isAnimatingReadyLine = !isLast && step.id === 'ready' && currentOrder.status === 'READY';
-                    const isAnimatingLine = isAnimatingPreparingLine || isAnimatingReadyLine;
-
-                    return (
-                      <View key={step.id} style={styles.progressItemContainer}>
-                        <View style={styles.progressStep}>
-                          {/* Step Circle — animated for Preparing, Ready & Delivered steps */}
-                          <Animated.View
-                            style={[
-                              styles.progressCircle,
-                              isActive
-                                ? (isDelivered
-                                  ? [styles.progressCircleActive, {
-                                    backgroundColor: cascadeAnims[index].interpolate({
-                                      inputRange: [0, 1],
-                                      outputRange: [DesignTokens.colors.orange[500], DesignTokens.colors.semantic.success],
-                                    }),
-                                  }]
-                                  : isReadyPulsing
-                                    ? [styles.progressCircleActive, { backgroundColor: DesignTokens.colors.semantic.success }]
-                                    : styles.progressCircleActive)
-                                : styles.progressCircleInactive,
-                              isReadyPulsing && { transform: [{ scale: readyPulseAnim }, { translateY: deliveryBounceAnim }] },
-                              isPreparingPulsing && { transform: [{ scale: preparingPulseAnim }] },
-                            ]}
-                          >
-                            <MaterialIcons
-                              name={isReadyPulsing ? 'room-service' as any : step.icon as any}
-                              size={20}
-                              color={isActive ? '#FFFFFF' : DesignTokens.colors.lightBrown[500]}
-                            />
-                          </Animated.View>
-
-                          {/* Step Label */}
-                          <Text
-                            fontSize={12}
-                            fontWeight={isReadyPulsing || isPreparingPulsing || isDelivered ? '700' : '500'}
-                            color={
-                              isDelivered
-                                ? DesignTokens.colors.semantic.success
-                                : isReadyPulsing
-                                  ? DesignTokens.colors.semantic.success
-                                  : isActive
-                                    ? DesignTokens.colors.orange[500]
-                                    : DesignTokens.colors.lightBrown[500]
-                            }
-                            marginTop={8}
-                            textAlign="center"
-                          >
-                            {step.label}
-                          </Text>
-                        </View>
-
-                        {/* Connector Line — animated fill on leading edge */}
+                        {/* Connector line */}
                         {!isLast && (
-                          <View
-                            style={[
-                              styles.progressLine,
-                              styles.progressLineInactive,
-                            ]}
-                          >
-                            {(lineActive || isAnimatingLine) && (
-                              <Animated.View
-                                style={[
-                                  StyleSheet.absoluteFill,
-                                  {
-                                    backgroundColor: isDelivered
-                                      ? DesignTokens.colors.semantic.success
-                                      : DesignTokens.colors.orange[500],
-                                    width: isAnimatingPreparingLine
-                                      ? progressLineFill.interpolate({
-                                        inputRange: [0, 1],
-                                        outputRange: ['0%', '100%'],
-                                      })
-                                      : isAnimatingReadyLine
-                                        ? readyToServedLineFill.interpolate({
-                                          inputRange: [0, 1],
-                                          outputRange: ['0%', '100%'],
-                                        })
-                                        : '100%',
-                                  },
-                                ]}
-                              />
+                          <View style={styles.timelineLineContainer}>
+                            <View style={styles.timelineLineInactive} />
+                            {(lineActive) && (
+                              <View style={[
+                                styles.timelineLineActive,
+                                isDelivered && { backgroundColor: DesignTokens.colors.semantic.success },
+                              ]} />
                             )}
                           </View>
                         )}
                       </View>
-                    );
-                  })}
-                </View>
-              </YStack>
+
+                      {/* Right column: label + date */}
+                      <View style={styles.timelineContent}>
+                        <Text
+                          fontSize={17}
+                          fontWeight={isActive ? '700' : '600'}
+                          color={isActive ? DesignTokens.colors.brown[900] : DesignTokens.colors.charcoal[400]}
+                        >
+                          {step.label}
+                        </Text>
+                        <Text
+                          fontSize={13}
+                          color={isActive ? DesignTokens.colors.lightBrown[500] : DesignTokens.colors.charcoal[300]}
+                          marginTop={2}
+                        >
+                          {step.date || 'Processing'}
+                        </Text>
+                      </View>
+                    </View>
+                  );
+                })}
+              </Animated.View>
 
               {/* View Details Section */}
               <TouchableOpacity
@@ -1285,24 +1197,6 @@ export function OrderStatusScreen({
             </Text>
           </TouchableOpacity>
 
-          {/* Order More Button */}
-          <TouchableOpacity
-            style={styles.orderMoreButton}
-            activeOpacity={0.8}
-            onPress={() => {
-              router.push('/(tabs)' as any);
-            }}
-          >
-            <MaterialIcons name="shopping-cart" size={20} color="#FFFFFF" />
-            <Text
-              fontSize={16}
-              fontWeight="600"
-              color="#FFFFFF"
-              marginLeft={8}
-            >
-              Order More
-            </Text>
-          </TouchableOpacity>
         </XStack>
       )}
     </ThemedView >
@@ -1328,73 +1222,86 @@ const styles = StyleSheet.create({
     flex: 1,
     textAlign: 'center',
   },
-  refreshButton: {
-    width: 40,
-    height: 40,
+
+  // --- Vertical Timeline ---
+  timelineCard: {
+    backgroundColor: DesignTokens.colors.beige[200],
     borderRadius: 20,
-    backgroundColor: '#FFF5EB',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: DesignTokens.colors.orange[500],
+    paddingVertical: 32,
+    paddingHorizontal: 24,
+    marginBottom: 20,
   },
-  statusCard: {
-    backgroundColor: DesignTokens.colors.beige[100]
-  },
-  chefImageContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  chefImageCircle: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: '#2D5016', // Dark green background?
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  progressCircle: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  progressCircleActive: {
-    backgroundColor: DesignTokens.colors.orange[500],
-  },
-  progressCircleInactive: {
-    backgroundColor: DesignTokens.colors.beige[200],
-  },
-  progressWrapper: {
+  timelineStepRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'flex-start',
-    paddingHorizontal: 8,
+    minHeight: 80,
   },
-  progressItemContainer: {
-    flex: 1,
-    flexDirection: 'row',
+  timelineLeftCol: {
+    width: 36,
     alignItems: 'center',
   },
-  progressStep: {
-    flex: 0,
+  timelineCircle: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
     alignItems: 'center',
-    zIndex: 2,
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: DesignTokens.colors.beige[300],
+    backgroundColor: DesignTokens.colors.neutral.white,
   },
-  progressLine: {
-    flex: 1,
-    height: 3,
-    marginTop: -24,
-    marginHorizontal: -24,
-    zIndex: 1,
-  },
-  progressLineActive: {
+  timelineCircleActive: {
+    borderColor: DesignTokens.colors.orange[500],
     backgroundColor: DesignTokens.colors.orange[500],
   },
-  progressLineInactive: {
-    backgroundColor: DesignTokens.colors.beige[200],
+  timelineCircleCurrent: {
+    borderColor: DesignTokens.colors.orange[500],
+    backgroundColor: DesignTokens.colors.orange[500],
+    // Slightly larger for active/current step
+    width: 22,
+    height: 22,
+    borderRadius: 11,
   },
+  timelineCircleInactive: {
+    borderColor: DesignTokens.colors.beige[300],
+    backgroundColor: DesignTokens.colors.neutral.white,
+  },
+  timelineCircleInner: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: DesignTokens.colors.neutral.white,
+  },
+  timelineLineContainer: {
+    flex: 1,
+    width: 2,
+    marginVertical: 4,
+    position: 'relative',
+    minHeight: 50,
+  },
+  timelineLineInactive: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    width: 2,
+    backgroundColor: DesignTokens.colors.beige[300],
+  },
+  timelineLineActive: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    width: 2,
+    backgroundColor: DesignTokens.colors.orange[500],
+  },
+  timelineContent: {
+    flex: 1,
+    paddingLeft: 16,
+    paddingBottom: 28,
+  },
+
+  // --- Existing styles ---
   detailsButton: {
     backgroundColor: 'white',
     borderRadius: 12,
@@ -1410,16 +1317,6 @@ const styles = StyleSheet.create({
   helpButton: {
     flex: 1,
     backgroundColor: DesignTokens.colors.white[100],
-    borderRadius: 12,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  orderMoreButton: {
-    flex: 1,
-    backgroundColor: DesignTokens.colors.orange[500],
     borderRadius: 12,
     paddingVertical: 14,
     paddingHorizontal: 16,

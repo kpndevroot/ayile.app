@@ -1,16 +1,98 @@
 # Ayile TODO
 
 
-[] time is not updating in order screen also the estimated time not updating while 
-resturant staff update
+---
 
-[] the order screen not exit while order is delivered check the active order only show the active order not delivered remove the order status while order is delivered
+## 🐛 Active Bugs
+
+---
+
+- [ ] **B1. Estimated Time Does Not Update When Staff Changes Order Status**
+
+- **Priority**: High
+- **Type**: Bug — Real-time sync
+- **Symptom**: The estimated arrival time displayed on the customer's order screen remains static after staff updates the order status (e.g., CONFIRMED → PREPARING → READY). The time shown is always calculated relative to `createdAt` and never recalculates after a WebSocket `order:updated` event.
+
+**Root cause**: `getEstimatedArrival()` in `OrderStatusScreen.tsx:464-477` computes the ETA as a fixed offset from `currentOrder.createdAt` (15 min for PREPARING, 20 min otherwise). It does not use any server-provided `estimatedReadyTime` or `updatedAt` field. When the order status changes via WebSocket, the component re-renders with the same `createdAt`, so the time never changes.
+
+**Files to modify**:
+- `Ayile/components/order/OrderStatusScreen.tsx` — `getEstimatedArrival()` (line ~464): refactor to use `order.updatedAt` or a new `estimatedReadyAt` field from the backend so the timer reflects real-world kitchen progress.
+- `ayile-fastify-api/src/routes/orders/index.ts` — (backend) Add an `estimatedReadyAt` timestamp field to the order update payload, set by staff when they change status. Include this field in the WebSocket broadcast data.
+- `Ayile/types/index.ts` — Add `estimatedReadyAt?: string` to the `Order` type interface.
+- `Ayile/app/(tabs)/order.tsx` — Verify the WebSocket `order:updated` handler (line ~274-321) propagates the new field correctly to `OrderStatusScreen`.
+
+**Implementation approach**:
+1. **Backend**: When staff updates order to `PREPARING`, calculate and store `estimatedReadyAt = now + restaurant.avgPrepTime`. Broadcast it with the `order:updated` event.
+2. **Frontend**: In `getEstimatedArrival()`, prefer `currentOrder.estimatedReadyAt` if available, falling back to the current static calculation.
+3. **Countdown**: Optionally display a live countdown (`X min remaining`) using `setInterval` that ticks every 30s.
+
+---
+
+- [x] **B2. Order Screen Persists After Delivery — Should Auto-Dismiss Delivered Orders**
+
+- **Priority**: High
+- **Type**: Bug — State management
+- **Symptom**: After an order is marked `DELIVERED`, the customer's order tab still shows the full order status screen instead of returning to the order history view. The user is stuck on a "delivered" order with no automatic transition.
+
+**Root cause**: In `order.tsx:120-124`, `loadData()` loads the stored `orderId` from `StorageService` and shows it regardless of status — the comment on line 123 says _"If order is DELIVERED or CANCELLED, we still show it until dismissed"_, but there is no auto-dismissal mechanism or timeout. The `OrderStatusScreen` plays the celebration animation but never calls `onDismiss` automatically.
+
+Additionally, when the user places a **new order** after the previous one was delivered, the new order is stored in `StorageService` with `setOrderId()`, but if the old order screen is still showing, the component doesn't re-check storage — it keeps rendering the stale `order` state.
+
+**Files to modify**:
+- `Ayile/app/(tabs)/order.tsx`:
+  - In `loadData()` (line ~96): Filter out delivered/cancelled orders — if the fetched order has status `DELIVERED` or `CANCELLED`, auto-clear it from storage and show order history instead.
+  - In the WebSocket handler (line ~292-305): When an `order:updated` event arrives with status `DELIVERED`, start a 5-10 second timer, then call `clearOrderData()` and refresh history.
+- `Ayile/components/order/OrderStatusScreen.tsx`: Add an `onAutoComplete` callback or use `useEffect` to detect `DELIVERED` status and trigger a delayed `onDismiss()` (e.g., 8 seconds after the celebration animation completes).
+
+**Implementation approach**:
+1. In the WebSocket `DELIVERED` handler in `order.tsx`, add: `setTimeout(() => { clearOrderData(); fetchOrderHistory(userData.id); }, 8000);`
+2. In `loadData()`, add a guard: `if (orderData.status === 'DELIVERED') { await clearOrderData(); setOrder(null); }` — so on screen focus, delivered orders are cleaned up.
+3. When `@forks_refresh_orders` trigger fires (from cart after placing a new order), ensure the old order is cleared first and the new order is loaded.
+
+---
+
+- [x] **B3. New Order Does Not Appear in Order Screen After Placing Another Order if the previous order is not Delivered**
+
+- **Priority**: High
+- **Type**: Bug — Navigation / state refresh
+- **Symptom**: After placing a second order (via "Order More"), the order screen still shows the previous order or order history. The new order screen does not open.
+
+## ✨ Feature Requests
+
+---
+
+- [ ] **F1. Add Resend Notifications Button for remind the customer to pick up the order**
 
 
-- also order more placed then new order screen not open in order screen
+---
 
+- [ ] **F2. Visual Table Selector UI Instead of Text Input for Table Number**
 
-[] snoozing option for staff notification
+- **Priority**: Medium
+- **Type**: Feature — Customer UX
+- **Symptom**: When placing an order, customers must manually type a table number into a text input. This is error-prone (typos, out-of-range numbers) and feels disconnected. A visual grid of available tables would be more intuitive and reduce order errors.
+
+**Current table system**:
+- `(staff)/table-management.tsx` — Staff-side table management screen. Tables are loaded via `StaffService.getTables()` and displayed as cards. The "Add Table" button (line ~96) is currently a `console.log` stub.
+- Customer side: Table number is collected via a modal with a `TextInput` in `CartScreen` (prompted before order submission). It validates against `restaurant.numberOfTables` but doesn't show which tables are occupied or available.
+
+**Files to modify**:
+- `Ayile/components/ui/TableSelector.tsx` — **[NEW]** Create a visual grid component:
+  - Fetch available tables from `GET /api/restaurants/:id/tables`.
+  - Render a grid of tappable table icons (numbered circles/cards).
+  - Visually distinguish: available (green), occupied (gray/disabled), selected (orange).
+  - Accept `onSelect(tableNumber: number)` callback.
+  - Follow 44x44px minimum touch target size and contrast accessibility guidelines per design rules.
+- `Ayile/app/(tabs)/cart.tsx` (or wherever the table number modal lives) — Replace the `TextInput` with the new `TableSelector` component.
+- `ayile-fastify-api/src/routes/restaurants/index.ts` — **Backend**: Ensure `GET /api/restaurants/:id/tables` returns table data with `isOccupied` status based on active orders, so the selector can show real-time availability.
+
+**Design spec**:
+- Grid layout: 3-4 columns depending on screen width.
+- Each cell: rounded card with table number, seats count, and availability dot.
+- Selected state: orange border + orange fill (matching `DesignTokens.colors.orange[500]`).
+- Occupied tables: `DesignTokens.colors.charcoal[300]` background, non-tappable.
+- Empty state: "No tables found" message.
+
 
 
 - [ ] **1. Migrate Order Update Socket to SSE (Server-Sent Events)**
@@ -49,17 +131,6 @@ resturant staff update
 
 ## Quick Wins — Small Changes, Big Impact
 
----
-
-### 🔒 Security
-
----
-
-### ⚡ Performance
-
----
-
-### 🧹 Developer Experience & Maintainability
 
 ---
 

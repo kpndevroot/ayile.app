@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
-import { YStack, XStack, Text } from '@tamagui/core';
+import { YStack, XStack, Text } from 'tamagui';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { DesignTokens } from '@/constants/design';
 import { OrderCard } from '@/components/staff';
@@ -165,11 +165,11 @@ export default function ReadyForDeliveryScreen() {
             borderRadius={DesignTokens.radius.md}
             backgroundColor={DesignTokens.colors.teal[500]}
           >
-            <Map size={18} color={DesignTokens.colors.white} />
+            <Map size={18} color={DesignTokens.colors.white[100]} />
             <Text
               fontSize={DesignTokens.typography.fontSize.sm}
               fontWeight={DesignTokens.typography.fontWeight.semibold}
-              color={DesignTokens.colors.white}
+              color={DesignTokens.colors.white[100]}
             >
               Map View
             </Text>
@@ -192,7 +192,7 @@ export default function ReadyForDeliveryScreen() {
             borderRadius={DesignTokens.radius.md}
             backgroundColor={
               activeTab === 'ready'
-                ? DesignTokens.colors.white
+                ? DesignTokens.colors.white[100]
                 : 'transparent'
             }
           >
@@ -216,7 +216,7 @@ export default function ReadyForDeliveryScreen() {
             borderRadius={DesignTokens.radius.md}
             backgroundColor={
               activeTab === 'out-for-delivery'
-                ? DesignTokens.colors.white
+                ? DesignTokens.colors.white[100]
                 : 'transparent'
             }
           >
