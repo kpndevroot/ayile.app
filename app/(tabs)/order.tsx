@@ -21,6 +21,7 @@ import { DesignTokens } from '@/constants/design';
 import { websocketService } from '@/services/websocketService';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNotification } from '@/contexts/NotificationContext';
+import { scheduleLocalNotification } from '@/utils/osNotifications';
 
 /**
  * Order Status Tab
@@ -282,6 +283,29 @@ export default function OrderTab() {
 
         // Handle incoming messages
         unsubscribeMessage = websocketService.onMessage((message) => {
+          // Handle pickup reminder from staff
+          if (message.type === 'order:pickup_reminder') {
+            const reminderOrder = message.data as Order;
+            const isCurrentOrder = order && reminderOrder.id === order.id;
+            const isSelectedOrder = selectedOrder && reminderOrder.id === selectedOrder.id;
+            if (isCurrentOrder || isSelectedOrder) {
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+              showNotification({
+                type: 'success',
+                title: 'Your order is ready for pickup! 🔔',
+                message: 'Please head to the counter to collect your order.',
+                duration: 8000,
+              });
+              // Also send an OS-level notification so the user sees it even if app is backgrounded
+              scheduleLocalNotification({
+                title: 'Order Ready for Pickup 🔔',
+                body: 'Your order is ready! Please head to the counter to collect it.',
+                data: { orderId: reminderOrder.id, type: 'pickup_reminder' },
+              });
+            }
+            return;
+          }
+
           if (message.type === 'order:updated' || message.type === 'order:created') {
             const updatedOrder = message.data as Order;
 

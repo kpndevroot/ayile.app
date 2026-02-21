@@ -408,6 +408,30 @@ export class StaffService {
   }
 
   /**
+   * Send pickup reminder notification to customer
+   * Only works for orders with READY status
+   */
+  static async sendReminder(orderId: string): Promise<void> {
+    try {
+      const response = await authenticatedFetch(
+        `${API_BASE_URL}${API_ENDPOINTS.ORDERS.SEND_REMINDER(orderId)}`,
+        {
+          method: 'POST',
+          body: JSON.stringify({}),
+        }
+      );
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to send reminder');
+      }
+    } catch (error: any) {
+      console.error('Error sending reminder:', error);
+      throw new Error(error.message || 'Failed to send reminder');
+    }
+  }
+
+  /**
    * Get kitchen orders (pending and preparing)
    */
   static async getKitchenOrders(): Promise<any[]> {

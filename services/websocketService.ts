@@ -7,6 +7,7 @@ export type WebSocketMessageType =
   | 'order:created'
   | 'order:updated'
   | 'order:deleted'
+  | 'order:pickup_reminder'
   | 'subscribed'
   | 'unsubscribed'
   | 'pong'

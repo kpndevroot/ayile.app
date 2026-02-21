@@ -20,6 +20,7 @@ import {
   ShoppingBag,
   Bike,
   Circle,
+  Bell,
 } from '@tamagui/lucide-icons';
 
 type OrderStatus = 'PENDING' | 'CONFIRMED' | 'PREPARING' | 'READY' | 'DELIVERED';
@@ -44,6 +45,7 @@ export default function OrderDetailScreen() {
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [order, setOrder] = useState<any>(null);
+  const [sendingReminder, setSendingReminder] = useState(false);
 
   useEffect(() => {
     if (orderId) {
@@ -77,6 +79,19 @@ export default function OrderDetailScreen() {
       Alert.alert('Error', error.message || 'Failed to update order status');
     }
   };
+  const handleSendReminder = async () => {
+    if (sendingReminder) return;
+    try {
+      setSendingReminder(true);
+      await StaffService.sendReminder(orderId);
+      Alert.alert('Success', 'Reminder sent successfully');
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Failed to send reminder');
+    } finally {
+      setSendingReminder(false);
+    }
+  };
+
 
   const handleCancelOrder = async () => {
     Alert.alert(
@@ -698,6 +713,37 @@ export default function OrderDetailScreen() {
               Cancel Order
             </Text>
           </Button>
+          {order.status === 'READY' && (
+            <Button
+              onPress={handleSendReminder}
+              disabled={sendingReminder}
+              variant="primary"
+              fullWidth
+              style={{
+                backgroundColor: sendingReminder
+                  ? DesignTokens.colors.orange[300]
+                  : DesignTokens.colors.orange[500],
+                minHeight: 56,
+                borderRadius: 12,
+                shadowColor: DesignTokens.colors.orange[500],
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.3,
+                shadowRadius: 8,
+                elevation: 4,
+              }}
+            >
+              <XStack alignItems="center" gap="$2">
+                {sendingReminder ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <Bell size={20} color="#FFFFFF" />
+                )}
+                <Text fontSize={16} fontWeight="700" color="#FFFFFF" letterSpacing={0.5}>
+                  {sendingReminder ? 'Sending...' : 'Send Pickup Reminder'}
+                </Text>
+              </XStack>
+            </Button>
+          )}
         </YStack>
       )}
       {/* Update Status Modal */}

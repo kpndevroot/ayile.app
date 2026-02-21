@@ -20,6 +20,7 @@ export const API_ENDPOINTS = {
     ITEM: (orderId: string, itemId: string) => `/api/orders/${orderId}/items/${itemId}`,
     UPDATE_STATUS: (id: string) => `/api/orders/${id}/status`,
     UPDATE_PAYMENT_STATUS: (id: string) => `/api/orders/${id}/payment-status`,
+    SEND_REMINDER: (id: string) => `/api/orders/${id}/notify`,
     WEBSOCKET: '/api/orders/ws',
   },
   RESTAURANTS: {
