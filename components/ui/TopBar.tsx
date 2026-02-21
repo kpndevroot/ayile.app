@@ -1,5 +1,6 @@
-  import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { View, StyleSheet, Alert } from 'react-native';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Text } from '@tamagui/core';
 import { XStack, YStack } from '@tamagui/stacks';
 import { Avatar } from '@tamagui/avatar';
@@ -51,7 +52,7 @@ export function TopBar({
             try {
               // Call logout API and clear storage
               await AuthService.logout();
-              
+
               // Call the onLogout callback to reset parent component state
               // This will trigger navigation reset and show login screen
               onLogout?.();
@@ -170,7 +171,6 @@ export function TopBar({
               elevation={5}
               enterStyle={{ opacity: 0, scale: 0.95 }}
               exitStyle={{ opacity: 0, scale: 0.95 }}
-              animation="quick"
             >
               <YStack padding="$2" gap="$1" minWidth={180}>
                 {onScanAnotherQR && (
@@ -190,7 +190,7 @@ export function TopBar({
                     }}
                   >
                     <XStack gap="$3" alignItems="center">
-                      <Text fontSize={20}>📷</Text>
+                      <MaterialIcons name="qr-code-scanner" size={20} color={DesignTokens.colors.neutral.gray900} />
                       <Text
                         fontSize={DesignTokens.typography.fontSize.md}
                         fontWeight={DesignTokens.typography.fontWeight.medium}
@@ -217,7 +217,7 @@ export function TopBar({
                   }}
                 >
                   <XStack gap="$3" alignItems="center">
-                    <Text fontSize={20}>🚪</Text>
+                    <MaterialIcons name="logout" size={20} color={DesignTokens.colors.semantic.error} />
                     <Text
                       fontSize={DesignTokens.typography.fontSize.md}
                       fontWeight={DesignTokens.typography.fontWeight.medium}

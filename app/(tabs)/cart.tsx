@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { ScrollView, StyleSheet, TouchableOpacity, Alert, ActivityIndicator, Modal, TextInput } from 'react-native';
+import { ScrollView, StyleSheet, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { Text } from '@tamagui/core';
 import { YStack, XStack } from '@tamagui/stacks';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
@@ -11,6 +11,7 @@ import { API_BASE_URL, API_ENDPOINTS } from '@/constants/api';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { CartItemRow } from '@/components/cart/CartItemRow';
+import { TableSelectorModal } from '@/components/ui/TableSelectorModal';
 
 export default function CartScreen() {
   const router = useRouter();
@@ -120,7 +121,6 @@ export default function CartScreen() {
   }, [loadCartData]);
 
   const [showTableModal, setShowTableModal] = useState(false);
-  const [tableNumberInput, setTableNumberInput] = useState('');
 
   const processOrderPlacement = async (tableNumber: string) => {
     setIsSubmitting(true);
@@ -165,7 +165,6 @@ export default function CartScreen() {
         await AsyncStorage.setItem('@forks_refresh_cart', 'true');
 
         setShowTableModal(false);
-        setTableNumberInput('');
 
         Alert.alert('Success', 'Order placed successfully!', [
           {
@@ -376,62 +375,16 @@ export default function CartScreen() {
           </TouchableOpacity>
         </YStack>
       </ScrollView>
-      <Modal
+      <TableSelectorModal
         visible={showTableModal}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => setShowTableModal(false)}
-      >
-        <YStack flex={1} backgroundColor="rgba(0,0,0,0.5)" alignItems="center" justifyContent="center" padding={20}>
-          <YStack backgroundColor="white" borderRadius={16} padding={24} width="100%" maxWidth={340} gap="$4">
-            <Text fontSize={20} fontWeight="700" color="#4A3B32" textAlign="center">
-              Enter Table Number
-            </Text>
-
-            <Text fontSize={14} color="#8D7A65" textAlign="center">
-              Please enter your table number to place the order.
-            </Text>
-
-            <TextInput
-              style={styles.tableInput}
-              value={tableNumberInput}
-              onChangeText={setTableNumberInput}
-              placeholder="e.g. 5"
-              keyboardType="numeric"
-              maxLength={3}
-              autoFocus
-            />
-
-            <XStack gap="$3" marginTop="$2">
-              <TouchableOpacity
-                style={[styles.modalButton, styles.cancelButton]}
-                onPress={() => {
-                  setShowTableModal(false);
-                  setTableNumberInput('');
-                }}
-              >
-                <Text color="#4A3B32" fontWeight="600">Cancel</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.modalButton, styles.confirmButton, !tableNumberInput && styles.disabledButton]}
-                onPress={() => {
-                  if (tableNumberInput) {
-                    processOrderPlacement(tableNumberInput);
-                  }
-                }}
-                disabled={!tableNumberInput}
-              >
-                {isSubmitting ? (
-                  <ActivityIndicator size="small" color="white" />
-                ) : (
-                  <Text color="white" fontWeight="600">Confirm</Text>
-                )}
-              </TouchableOpacity>
-            </XStack>
-          </YStack>
-        </YStack>
-      </Modal>
+        restaurantId={restaurantData?.id || ''}
+        onSelect={(tableNumber) => {
+          setShowTableModal(false);
+          processOrderPlacement(tableNumber);
+        }}
+        onClose={() => setShowTableModal(false)}
+        isSubmitting={isSubmitting}
+      />
     </ThemedView>
   );
 }
@@ -471,31 +424,6 @@ const styles = StyleSheet.create({
   primaryButtonDisabled: {
     opacity: 0.6,
   },
-  tableInput: {
-    borderWidth: 1,
-    borderColor: '#D4C4B0',
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 18,
-    textAlign: 'center',
-    backgroundColor: '#FAF7F2',
-    color: '#4A3B32',
-  },
-  modalButton: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cancelButton: {
-    backgroundColor: '#E5E7EB',
-  },
-  confirmButton: {
-    backgroundColor: '#F97316',
-  },
-  disabledButton: {
-    opacity: 0.5,
-  },
+
 });
 

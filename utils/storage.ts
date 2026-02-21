@@ -1,7 +1,13 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as SecureStore from 'expo-secure-store';
+import { Platform } from 'react-native';
 import { STORAGE_KEYS } from '@/constants/storage';
 import { User, TableInfo, MenuItem } from '@/types';
+
+// Only import SecureStore on native platforms
+let SecureStore: typeof import('expo-secure-store') | null = null;
+if (Platform.OS !== 'web') {
+  SecureStore = require('expo-secure-store');
+}
 
 export interface LocalCartItem {
   menuItemId: string;
@@ -47,10 +53,13 @@ export class StorageService {
     await AsyncStorage.setItem(STORAGE_KEYS.USER_ID, userId);
   }
 
-  // Auth token
+  // Auth token — uses SecureStore on native, localStorage on web
   static async getAuthToken(): Promise<string | null> {
     try {
-      return await SecureStore.getItemAsync(STORAGE_KEYS.AUTH_TOKEN);
+      if (Platform.OS === 'web') {
+        return localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
+      }
+      return await SecureStore!.getItemAsync(STORAGE_KEYS.AUTH_TOKEN);
     } catch (error) {
       console.error('Error getting auth token:', error);
       return null;
@@ -58,12 +67,20 @@ export class StorageService {
   }
 
   static async setAuthToken(token: string): Promise<void> {
-    await SecureStore.setItemAsync(STORAGE_KEYS.AUTH_TOKEN, token);
+    if (Platform.OS === 'web') {
+      localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, token);
+      return;
+    }
+    await SecureStore!.setItemAsync(STORAGE_KEYS.AUTH_TOKEN, token);
   }
 
   static async removeAuthToken(): Promise<void> {
     try {
-      await SecureStore.deleteItemAsync(STORAGE_KEYS.AUTH_TOKEN);
+      if (Platform.OS === 'web') {
+        localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
+        return;
+      }
+      await SecureStore!.deleteItemAsync(STORAGE_KEYS.AUTH_TOKEN);
     } catch (error) {
       console.error('Error removing auth token:', error);
     }

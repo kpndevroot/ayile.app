@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, useRef } from 'react';
+import { Platform } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { NotificationBanner } from '@/components/ui/NotificationBanner';
 import { playNotificationSound } from '@/utils/notificationSound';
@@ -65,8 +66,8 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     const id = ++idCounter.current;
     const duration = config.duration ?? 4000;
 
-    // Trigger haptic feedback
-    if (config.haptic !== false) {
+    // Trigger haptic feedback (native only — no haptics API on web)
+    if (config.haptic !== false && Platform.OS !== 'web') {
       const hapticType = config.type === 'error'
         ? Haptics.NotificationFeedbackType.Error
         : config.type === 'warning'

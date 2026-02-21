@@ -332,9 +332,15 @@ export function HomePage({
               value={searchQuery}
               onChangeText={setSearchQuery}
             />
-            <TouchableOpacity>
-              <MaterialIcons name="mic" size={20} color={DesignTokens.colors.charcoal[500]} />
-            </TouchableOpacity>
+            {searchQuery.length > 0 && (
+              <TouchableOpacity
+                onPress={() => setSearchQuery('')}
+                hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
+                activeOpacity={0.7}
+              >
+                <MaterialIcons name="close" size={18} color={DesignTokens.colors.charcoal[400]} />
+              </TouchableOpacity>
+            )}
           </XStack>
         </YStack>
 

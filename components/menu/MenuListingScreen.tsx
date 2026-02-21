@@ -8,6 +8,7 @@ import {
   Dimensions,
   Animated,
   View,
+  TextInput,
 } from 'react-native';
 import { Text } from '@tamagui/core';
 import { YStack, XStack } from '@tamagui/stacks';
@@ -194,20 +195,34 @@ export function MenuListingScreen({
             backgroundColor="white"
             borderRadius={12}
             paddingHorizontal={16}
-            paddingVertical={12}
+            paddingVertical={4}
             alignItems="center"
             gap={12}
             style={styles.searchBar}
           >
             <MaterialIcons name="search" size={20} color="#6B7280" />
-            <Text
-              fontSize={15}
-              color="#9CA3AF"
-              flex={1}
-              fontWeight="400"
-            >
-              Search food, drinks, etc.
-            </Text>
+            <TextInput
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              placeholder="Search food, drinks, etc."
+              placeholderTextColor="#9CA3AF"
+              style={{
+                flex: 1,
+                fontSize: 15,
+                color: '#1A0F08',
+                paddingVertical: 8,
+              }}
+              returnKeyType="search"
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity
+                onPress={() => setSearchQuery('')}
+                hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
+                activeOpacity={0.7}
+              >
+                <MaterialIcons name="close" size={18} color="#9CA3AF" />
+              </TouchableOpacity>
+            )}
           </XStack>
         </YStack>
 

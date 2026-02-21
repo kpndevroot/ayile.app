@@ -5,7 +5,7 @@ import {
   TouchableOpacity,
   ScrollView,
   Dimensions,
-  Alert,
+  View,
   Platform,
 } from 'react-native';
 import { Text } from '@tamagui/core';
@@ -13,9 +13,11 @@ import { YStack, XStack } from '@tamagui/stacks';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { DesignTokens } from '@/constants/design';
 import { MenuItem } from '@/types';
-import { StorageService } from '@/utils/storage';
+import { FoodImage } from '@/components/ui/FoodImage';
+import { LinearGradient } from 'expo-linear-gradient';
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+const { height: SCREEN_HEIGHT } = Dimensions.get('window');
+const IMAGE_HEIGHT = SCREEN_HEIGHT * 0.3;
 
 interface QuantityOption {
   id: string;
@@ -43,7 +45,17 @@ interface MenuItemCustomizationModalProps {
 
 /**
  * Menu Item Customization Modal
- * Displays item details with quantity selection, add-ons, and add to cart functionality
+ *
+ * Full-screen bottom sheet with hero food image, item details,
+ * quantity/portion selection, and add to cart action bar.
+ *
+ * Design rules:
+ * - Serial Position: key info (name, price) at top, CTA at bottom
+ * - Fitts's Law: large tap targets (48px+), full-width CTA
+ * - Von Restorff: selected option highlighted with orange
+ * - Progressive disclosure: add-ons section expandable
+ * - Aesthetic-Usability: hero image creates premium feel
+ * - Consistent 8pt grid spacing from DesignTokens
  */
 export function MenuItemCustomizationModal({
   visible,
@@ -59,24 +71,22 @@ export function MenuItemCustomizationModal({
   const [quantity, setQuantity] = useState(1);
   const [isFavorite, setIsFavorite] = useState(false);
 
-  // Initialize quantity options if not provided
   useEffect(() => {
     if (item && quantityOptions.length === 0) {
-      // Create default quantity options from base price
       const basePrice = parseFloat(item.price);
       const defaultOptions: QuantityOption[] = [
         {
           id: 'full',
           displayLabel: 'Full',
           price: basePrice,
-          servings: 'Serves 2-3 people',
+          servings: 'Serves 2-3',
           isDefault: true,
         },
         {
           id: 'half',
           displayLabel: 'Half',
           price: Math.round(basePrice * 0.5),
-          servings: 'Serves 1 person',
+          servings: 'Serves 1',
         },
       ];
       setSelectedQuantityOption(defaultOptions[0]);
@@ -86,7 +96,6 @@ export function MenuItemCustomizationModal({
     }
   }, [item, quantityOptions]);
 
-  // Reset state when modal closes
   useEffect(() => {
     if (!visible) {
       setQuantity(1);
@@ -101,8 +110,8 @@ export function MenuItemCustomizationModal({
   if (!item) return null;
 
   const basePrice = selectedQuantityOption
-    ? (typeof selectedQuantityOption.price === 'string' ? parseFloat(selectedQuantityOption.price as any) : selectedQuantityOption.price)
-    : parseFloat(item.price);
+    ? (Number(selectedQuantityOption.price) || 0)
+    : (Number(item.price) || 0);
 
   const addOnsTotal = Array.from(selectedAddOns).reduce((total, addOnId) => {
     const addOn = addOns.find(a => a.id === addOnId);
@@ -115,7 +124,6 @@ export function MenuItemCustomizationModal({
     const selectedAddOnsList = Array.from(selectedAddOns)
       .map(id => addOns.find(a => a.id === id))
       .filter(Boolean) as AddOn[];
-
     onAddToCart(item, quantity, selectedQuantityOption || undefined, selectedAddOnsList);
     onClose();
   };
@@ -130,17 +138,6 @@ export function MenuItemCustomizationModal({
     setSelectedAddOns(newSelected);
   };
 
-  const increaseQuantity = () => {
-    setQuantity(prev => prev + 1);
-  };
-
-  const decreaseQuantity = () => {
-    if (quantity > 1) {
-      setQuantity(prev => prev - 1);
-    }
-  };
-
-  // Default quantity options if none provided
   const displayQuantityOptions: QuantityOption[] = quantityOptions.length > 0
     ? quantityOptions
     : [
@@ -148,24 +145,33 @@ export function MenuItemCustomizationModal({
         id: 'full',
         displayLabel: 'Full',
         price: parseFloat(item.price),
-        servings: 'Serves 2-3 people',
+        servings: 'Serves 2-3',
         isDefault: true,
       },
       {
         id: 'half',
         displayLabel: 'Half',
         price: Math.round(parseFloat(item.price) * 0.5),
-        servings: 'Serves 1 person',
+        servings: 'Serves 1',
       },
     ];
 
-  // Default add-ons if none provided
   const displayAddOns: AddOn[] = addOns.length > 0
     ? addOns
     : [
       { id: 'garlic-sauce', name: 'Extra Garlic Sauce', price: 30 },
       { id: 'coke-zero', name: 'Coke Zero 330ml', price: 50 },
     ];
+
+  // Info badges
+  const infoBadges: { icon: string; label: string; color: string }[] = [];
+  if (item.preparationTime) {
+    infoBadges.push({
+      icon: 'schedule',
+      label: `${item.preparationTime} min`,
+      color: DesignTokens.colors.lightBrown[400],
+    });
+  }
 
   return (
     <Modal
@@ -174,357 +180,459 @@ export function MenuItemCustomizationModal({
       transparent={true}
       onRequestClose={onClose}
     >
-      <YStack flex={1} backgroundColor="rgba(0,0,0,0.5)" justifyContent="flex-end">
-        <YStack
-          backgroundColor={DesignTokens.colors.background.light}
-          borderTopLeftRadius={24}
-          borderTopRightRadius={24}
-          height="90%"
-          overflow="hidden"
-        >
-          {/* Header */}
-          <YStack
-            backgroundColor={DesignTokens.colors.neutral.white}
-            borderBottomWidth={1}
-            borderBottomColor={DesignTokens.colors.beige[300]}
-            paddingHorizontal="$4"
-            paddingVertical="$3"
-          >
-            {/* Handle Bar */}
-            <YStack alignItems="center" marginBottom="$3">
-              <YStack width={40} height={4} borderRadius={2} backgroundColor={DesignTokens.colors.beige[400]} />
-            </YStack>
+      <View style={styles.overlay}>
+        <View style={styles.modalContainer}>
+          {/* Drag Handle */}
+          <View style={styles.handleBar}>
+            <View style={styles.handle} />
+          </View>
 
-            <XStack alignItems="center" justifyContent="space-between">
+          {/* Hero Image Section */}
+          <View style={styles.imageContainer}>
+            <FoodImage
+              imageUrl={item.imageUrl}
+              width="100%"
+              height={IMAGE_HEIGHT}
+              resizeMode="cover"
+            />
+            {/* Gradient overlay for readability */}
+            <LinearGradient
+              colors={['transparent', 'rgba(0,0,0,0.4)']}
+              style={styles.imageGradient}
+            />
+
+            {/* Floating action buttons on image */}
+            <View style={styles.imageActions}>
               <TouchableOpacity
-                onPress={() => setIsFavorite(!isFavorite)}
+                onPress={onClose}
                 activeOpacity={0.7}
-                style={styles.iconButton}
+                style={styles.floatingButton}
               >
-                <MaterialIcons
-                  name={isFavorite ? 'favorite' : 'favorite-border'}
-                  size={24}
-                  color={isFavorite ? DesignTokens.colors.semantic.error : DesignTokens.colors.brown[900]}
-                />
+                <MaterialIcons name="close" size={22} color="#FFF" />
               </TouchableOpacity>
+            </View>
 
-              <Text
-                fontSize={DesignTokens.typography.fontSize.lg}
-                fontWeight={DesignTokens.typography.fontWeight.bold}
-                color={DesignTokens.colors.brown[900]}
-              >
-                Customize Item
-              </Text>
-
-              <TouchableOpacity onPress={onClose} activeOpacity={0.7} style={styles.iconButton}>
-                <MaterialIcons name="close" size={24} color={DesignTokens.colors.brown[900]} />
-              </TouchableOpacity>
-            </XStack>
-          </YStack>
+          </View>
 
           <ScrollView
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.scrollContent}
+            bounces={false}
           >
             {/* Item Details */}
-            <YStack padding="$4" gap="$3">
-              <XStack alignItems="center" justifyContent="space-between" marginBottom="$2">
-                <YStack flex={1}>
+            <View style={styles.detailsSection}>
+              {/* Name + Rating Row */}
+              <View style={styles.nameRow}>
+                <View style={{ flex: 1 }}>
                   <Text
-                    fontSize={DesignTokens.typography.fontSize['2xl']}
-                    fontWeight={DesignTokens.typography.fontWeight.bold}
+                    fontSize={24}
+                    fontWeight="800"
                     color={DesignTokens.colors.brown[900]}
-                    marginBottom="$1"
+                    numberOfLines={2}
                   >
                     {item.name}
                   </Text>
-                  <XStack alignItems="center" gap="$1">
-                    <MaterialIcons
-                      name="star"
-                      size={18}
-                      color={DesignTokens.colors.orange[500]}
-                    />
-                    <Text
-                      fontSize={DesignTokens.typography.fontSize.md}
-                      fontWeight={DesignTokens.typography.fontWeight.semibold}
-                      color={DesignTokens.colors.orange[500]}
-                    >
-                      {rating.toFixed(1)}
-                    </Text>
-                  </XStack>
-                </YStack>
-              </XStack>
+                </View>
+                <View style={styles.ratingBadge}>
+                  <MaterialIcons name="star" size={16} color="#FFF" />
+                  <Text fontSize={14} fontWeight="700" color="#FFF">
+                    {rating.toFixed(1)}
+                  </Text>
+                </View>
+              </View>
 
+              {/* Info Badges */}
+              {infoBadges.length > 0 && (
+                <View style={styles.badgeRow}>
+                  {infoBadges.map((badge, idx) => (
+                    <View
+                      key={idx}
+                      style={[styles.dietBadge, { backgroundColor: badge.color + '15' }]}
+                    >
+                      <MaterialIcons name={badge.icon as any} size={14} color={badge.color} />
+                      <Text fontSize={12} fontWeight="600" color={badge.color}>
+                        {badge.label}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+
+              {/* Description */}
               {item.description && (
                 <Text
-                  fontSize={DesignTokens.typography.fontSize.sm}
+                  fontSize={14}
                   color={DesignTokens.colors.lightBrown[500]}
-                  lineHeight={20}
+                  lineHeight={21}
+                  marginTop={12}
                 >
                   {item.description}
                 </Text>
               )}
+            </View>
 
-              {/* Choose Quantity Section */}
-              <YStack gap="$2" marginTop="$4">
-                <Text
-                  fontSize={DesignTokens.typography.fontSize.lg}
-                  fontWeight={DesignTokens.typography.fontWeight.bold}
-                  color={DesignTokens.colors.brown[900]}
-                >
-                  Choose Quantity
-                </Text>
+            {/* Divider */}
+            <View style={styles.divider} />
 
-                <XStack flexWrap="wrap" gap="$3">
-                  {displayQuantityOptions.map((option) => {
-                    const isSelected = selectedQuantityOption?.id === option.id;
-                    return (
-                      <TouchableOpacity
-                        key={option.id}
-                        onPress={() => setSelectedQuantityOption(option)}
-                        activeOpacity={0.8}
+            {/* Choose Portion */}
+            <View style={styles.section}>
+              <Text
+                fontSize={18}
+                fontWeight="700"
+                color={DesignTokens.colors.brown[900]}
+                marginBottom={14}
+              >
+                Choose Portion
+              </Text>
+
+              <View style={styles.optionsGrid}>
+                {displayQuantityOptions.map((option) => {
+                  const isSelected = selectedQuantityOption?.id === option.id;
+                  const optionPrice = Number(option.price) || 0;
+
+                  return (
+                    <TouchableOpacity
+                      key={option.id}
+                      onPress={() => setSelectedQuantityOption(option)}
+                      activeOpacity={0.8}
+                      style={[
+                        styles.portionCard,
+                        isSelected && styles.portionCardSelected,
+                      ]}
+                    >
+                      {/* Radio indicator */}
+                      <View
                         style={[
-                          styles.quantityOption,
-                          isSelected && styles.quantityOptionSelected,
+                          styles.radioOuter,
+                          isSelected && styles.radioOuterSelected,
                         ]}
                       >
-                        <XStack
-                          position="absolute"
-                          top={8}
-                          right={8}
-                          width={20}
-                          height={20}
-                          borderRadius={10}
-                          backgroundColor={isSelected ? DesignTokens.colors.orange[500] : DesignTokens.colors.beige[300]}
-                          alignItems="center"
-                          justifyContent="center"
-                        >
-                          {isSelected && (
-                            <MaterialIcons name="check" size={14} color={DesignTokens.colors.neutral.white} />
-                          )}
-                        </XStack>
-                        <YStack gap="$1">
-                          <Text
-                            fontSize={DesignTokens.typography.fontSize.md}
-                            fontWeight={DesignTokens.typography.fontWeight.bold}
-                            color={DesignTokens.colors.brown[900]}
-                          >
-                            {option.displayLabel}
-                          </Text>
-                          <Text
-                            fontSize={DesignTokens.typography.fontSize.lg}
-                            fontWeight={DesignTokens.typography.fontWeight.bold}
-                            color={DesignTokens.colors.brown[900]}
-                          >
-                            ₹{typeof option.price === 'string' ? parseFloat(option.price).toFixed(0) : option.price.toFixed(0)}
-                          </Text>
-                          {option.servings && (
-                            <Text
-                              fontSize={DesignTokens.typography.fontSize.xs}
-                              color={DesignTokens.colors.lightBrown[500]}
-                            >
-                              {option.servings}
-                            </Text>
-                          )}
-                        </YStack>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </XStack>
-              </YStack>
+                        {isSelected && <View style={styles.radioInner} />}
+                      </View>
 
-              {/* Complete your meal Section */}
-              {/* {displayAddOns.length > 0 && (
-                <YStack gap="$2" marginTop="$4">
-                  <Text
-                    fontSize={DesignTokens.typography.fontSize.lg}
-                    fontWeight={DesignTokens.typography.fontWeight.bold}
-                    color={DesignTokens.colors.brown[900]}
-                  >
-                    Complete your meal
-                  </Text>
-
-                  <YStack gap="$2">
-                    {displayAddOns.map((addOn) => {
-                      const isSelected = selectedAddOns.has(addOn.id);
-                      return (
-                        <TouchableOpacity
-                          key={addOn.id}
-                          onPress={() => toggleAddOn(addOn.id)}
-                          activeOpacity={0.8}
-                          style={styles.addOnOption}
+                      <View style={{ flex: 1 }}>
+                        <Text
+                          fontSize={16}
+                          fontWeight="700"
+                          color={DesignTokens.colors.brown[900]}
                         >
-                          <YStack flex={1}>
-                            <Text
-                              fontSize={DesignTokens.typography.fontSize.md}
-                              fontWeight={DesignTokens.typography.fontWeight.semibold}
-                              color={DesignTokens.colors.brown[900]}
-                            >
-                              {addOn.name}
-                            </Text>
-                            <Text
-                              fontSize={DesignTokens.typography.fontSize.sm}
-                              color={DesignTokens.colors.orange[500]}
-                              marginTop="$0.5"
-                            >
-                              +₹{addOn.price}
-                            </Text>
-                          </YStack>
-                          <XStack
-                            width={24}
-                            height={24}
-                            borderRadius={4}
-                            borderWidth={2}
-                            borderColor={isSelected ? DesignTokens.colors.orange[500] : DesignTokens.colors.beige[400]}
-                            backgroundColor={isSelected ? DesignTokens.colors.orange[500] : 'transparent'}
-                            alignItems="center"
-                            justifyContent="center"
+                          {option.displayLabel}
+                        </Text>
+                        {option.servings && (
+                          <Text
+                            fontSize={12}
+                            color={DesignTokens.colors.lightBrown[400]}
+                            marginTop={2}
                           >
-                            {isSelected && (
-                              <MaterialIcons name="check" size={16} color={DesignTokens.colors.neutral.white} />
-                            )}
-                          </XStack>
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </YStack>
-                </YStack>
-              )} */}
-            </YStack>
+                            {option.servings}
+                          </Text>
+                        )}
+                      </View>
+
+                      <Text
+                        fontSize={18}
+                        fontWeight="800"
+                        color={isSelected ? DesignTokens.colors.orange[600] : DesignTokens.colors.brown[900]}
+                      >
+                        ₹{optionPrice.toFixed(0)}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
           </ScrollView>
 
           {/* Bottom Action Bar */}
-          <XStack
-            padding="$4"
-            paddingBottom={Platform.OS === 'ios' ? 30 : 20}
-            backgroundColor={DesignTokens.colors.neutral.white}
-            borderTopWidth={1}
-            borderTopColor={DesignTokens.colors.beige[300]}
-            alignItems="center"
-            justifyContent="space-between"
-            gap="$3"
-          >
+          <View style={styles.actionBar}>
             {/* Quantity Selector */}
-            <XStack
-              alignItems="center"
-              gap="$2"
-              backgroundColor={DesignTokens.colors.beige[200]}
-              borderRadius={DesignTokens.radius.lg}
-              paddingHorizontal="$2"
-              paddingVertical="$1.5"
-            >
+            <View style={styles.quantitySelector}>
               <TouchableOpacity
-                onPress={decreaseQuantity}
+                onPress={() => quantity > 1 && setQuantity(q => q - 1)}
                 activeOpacity={0.7}
-                style={styles.quantityButton}
+                style={[styles.qtyBtn, quantity <= 1 && styles.qtyBtnDisabled]}
+                disabled={quantity <= 1}
               >
-                <Text
-                  fontSize={DesignTokens.typography.fontSize.lg}
-                  fontWeight={DesignTokens.typography.fontWeight.bold}
-                  color={DesignTokens.colors.brown[900]}
-                >
-                  -
-                </Text>
+                <MaterialIcons
+                  name="remove"
+                  size={20}
+                  color={quantity <= 1 ? DesignTokens.colors.beige[400] : DesignTokens.colors.brown[900]}
+                />
               </TouchableOpacity>
               <Text
-                fontSize={DesignTokens.typography.fontSize.lg}
-                fontWeight={DesignTokens.typography.fontWeight.bold}
+                fontSize={18}
+                fontWeight="800"
                 color={DesignTokens.colors.brown[900]}
-                minWidth={30}
-                textAlign="center"
+                style={{ minWidth: 28, textAlign: 'center' }}
               >
                 {quantity}
               </Text>
               <TouchableOpacity
-                onPress={increaseQuantity}
+                onPress={() => setQuantity(q => q + 1)}
                 activeOpacity={0.7}
-                style={[styles.quantityButton, styles.quantityButtonPlus]}
+                style={styles.qtyBtnPlus}
               >
-                <Text
-                  fontSize={DesignTokens.typography.fontSize.lg}
-                  fontWeight={DesignTokens.typography.fontWeight.bold}
-                  color={DesignTokens.colors.neutral.white}
-                >
-                  +
-                </Text>
+                <MaterialIcons name="add" size={20} color="#FFF" />
               </TouchableOpacity>
-            </XStack>
+            </View>
 
-            {/* Add Item Button */}
+            {/* Add to Cart Button */}
             <TouchableOpacity
               onPress={handleAddToCart}
               activeOpacity={0.8}
-              style={styles.addItemButton}
+              style={styles.addToCartBtn}
             >
-              <Text
-                fontSize={DesignTokens.typography.fontSize.md}
-                fontWeight={DesignTokens.typography.fontWeight.bold}
-                color={DesignTokens.colors.neutral.white}
-              >
-                Add Item • ₹{totalPrice.toFixed(0)}
+              <MaterialIcons name="shopping-bag" size={20} color="#FFF" />
+              <Text fontSize={16} fontWeight="700" color="#FFF" marginLeft={8}>
+                Add to Cart
               </Text>
+              <View style={styles.pricePill}>
+                <Text fontSize={14} fontWeight="800" color={DesignTokens.colors.orange[600]}>
+                  ₹{totalPrice.toFixed(0)}
+                </Text>
+              </View>
             </TouchableOpacity>
-          </XStack>
-        </YStack>
-      </YStack>
+          </View>
+        </View>
+      </View>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  scrollContent: {
-    paddingBottom: 20,
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'flex-end',
   },
-  quantityOption: {
-    width: '48%', // Force 2 columns with slight gap tolerance
-    aspectRatio: 1.4, // Consistent height/width ratio
-    backgroundColor: DesignTokens.colors.neutral.white,
-    borderRadius: DesignTokens.radius.md,
-    padding: DesignTokens.spacing.md,
-    borderWidth: 2,
-    borderColor: DesignTokens.colors.beige[300],
+  modalContainer: {
+    backgroundColor: DesignTokens.colors.background.light,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    height: '92%',
+    overflow: 'hidden',
+  },
+  handleBar: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 10,
+    alignItems: 'center',
+    paddingTop: 10,
+    paddingBottom: 6,
+  },
+  handle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: 'rgba(255,255,255,0.6)',
+  },
+
+  // Hero Image
+  imageContainer: {
+    width: '100%',
+    height: IMAGE_HEIGHT,
     position: 'relative',
-    marginBottom: DesignTokens.spacing.sm, // Add bottom spacing for wrapping
   },
-  quantityOptionSelected: {
+  imageGradient: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: IMAGE_HEIGHT * 0.5,
+  },
+  imageActions: {
+    position: 'absolute',
+    top: Platform.OS === 'ios' ? 16 : 12,
+    left: 16,
+    right: 16,
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+  },
+  floatingButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backdropFilter: 'blur(10)',
+  },
+  priceTag: {
+    position: 'absolute',
+    bottom: 16,
+    left: 20,
+    backgroundColor: DesignTokens.colors.orange[500],
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 12,
+    shadowColor: DesignTokens.colors.orange[700],
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+
+  // Details
+  detailsSection: {
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 4,
+  },
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  ratingBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: DesignTokens.colors.orange[500],
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+    marginTop: 2,
+  },
+  badgeRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 12,
+  },
+  dietBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 20,
+  },
+
+  divider: {
+    height: 1,
+    backgroundColor: DesignTokens.colors.beige[200],
+    marginHorizontal: 20,
+    marginVertical: 16,
+  },
+
+  // Portion options
+  section: {
+    paddingHorizontal: 20,
+    paddingBottom: 24,
+  },
+  optionsGrid: {
+    gap: 10,
+  },
+  portionCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: DesignTokens.colors.neutral.white,
+    borderRadius: 14,
+    padding: 16,
+    borderWidth: 2,
+    borderColor: DesignTokens.colors.beige[200],
+    gap: 14,
+  },
+  portionCardSelected: {
     borderColor: DesignTokens.colors.orange[500],
     backgroundColor: DesignTokens.colors.orange[50],
     shadowColor: DesignTokens.colors.orange[500],
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
     elevation: 3,
   },
-  addOnOption: {
+  radioOuter: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 2,
+    borderColor: DesignTokens.colors.beige[400],
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  radioOuterSelected: {
+    borderColor: DesignTokens.colors.orange[500],
+  },
+  radioInner: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: DesignTokens.colors.orange[500],
+  },
+
+  scrollContent: {
+    paddingBottom: 20,
+  },
+
+  // Action bar
+  actionBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingTop: 14,
+    paddingBottom: Platform.OS === 'ios' ? 34 : 20,
     backgroundColor: DesignTokens.colors.neutral.white,
-    borderRadius: DesignTokens.radius.md,
-    padding: DesignTokens.spacing.md,
-    borderWidth: 1,
-    borderColor: DesignTokens.colors.beige[300],
+    borderTopWidth: 1,
+    borderTopColor: DesignTokens.colors.beige[200],
+    gap: 14,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -3 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 8,
   },
-  quantityButton: {
-    width: 32,
-    height: 32,
+  quantitySelector: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: DesignTokens.colors.beige[100],
+    borderRadius: 14,
+    paddingHorizontal: 4,
+    paddingVertical: 4,
+    gap: 2,
+  },
+  qtyBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: DesignTokens.colors.neutral.white,
   },
-  quantityButtonPlus: {
+  qtyBtnDisabled: {
+    opacity: 0.5,
+  },
+  qtyBtnPlus: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: DesignTokens.colors.orange[500],
-    borderRadius: DesignTokens.radius.md,
   },
-  addItemButton: {
+  addToCartBtn: {
     flex: 1,
-    backgroundColor: DesignTokens.colors.orange[500],
-    borderRadius: DesignTokens.radius.lg,
-    paddingVertical: DesignTokens.spacing.md,
-    paddingHorizontal: DesignTokens.spacing.lg,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: DesignTokens.colors.orange[500],
+    borderRadius: 14,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    shadowColor: DesignTokens.colors.orange[600],
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
   },
-  iconButton: {
-    padding: 4,
+  pricePill: {
+    backgroundColor: '#FFF',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    marginLeft: 10,
   },
 });
