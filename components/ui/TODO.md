@@ -61,37 +61,11 @@ Additionally, when the user places a **new order** after the previous one was de
 
 ---
 
-- [ ] **F1. Add Resend Notifications Button for remind the customer to pick up the order**
-
 
 ---
 
-- [ ] **F2. Visual Table Selector UI Instead of Text Input for Table Number**
-
-- **Priority**: Medium
-- **Type**: Feature — Customer UX
-- **Symptom**: When placing an order, customers must manually type a table number into a text input. This is error-prone (typos, out-of-range numbers) and feels disconnected. A visual grid of available tables would be more intuitive and reduce order errors.
-
-**Current table system**:
-- `(staff)/table-management.tsx` — Staff-side table management screen. Tables are loaded via `StaffService.getTables()` and displayed as cards. The "Add Table" button (line ~96) is currently a `console.log` stub.
-- Customer side: Table number is collected via a modal with a `TextInput` in `CartScreen` (prompted before order submission). It validates against `restaurant.numberOfTables` but doesn't show which tables are occupied or available.
-
-**Files to modify**:
-- `Ayile/components/ui/TableSelector.tsx` — **[NEW]** Create a visual grid component:
-  - Fetch available tables from `GET /api/restaurants/:id/tables`.
-  - Render a grid of tappable table icons (numbered circles/cards).
-  - Visually distinguish: available (green), occupied (gray/disabled), selected (orange).
-  - Accept `onSelect(tableNumber: number)` callback.
-  - Follow 44x44px minimum touch target size and contrast accessibility guidelines per design rules.
-- `Ayile/app/(tabs)/cart.tsx` (or wherever the table number modal lives) — Replace the `TextInput` with the new `TableSelector` component.
-- `ayile-fastify-api/src/routes/restaurants/index.ts` — **Backend**: Ensure `GET /api/restaurants/:id/tables` returns table data with `isOccupied` status based on active orders, so the selector can show real-time availability.
-
-**Design spec**:
-- Grid layout: 3-4 columns depending on screen width.
-- Each cell: rounded card with table number, seats count, and availability dot.
-- Selected state: orange border + orange fill (matching `DesignTokens.colors.orange[500]`).
-- Occupied tables: `DesignTokens.colors.charcoal[300]` background, non-tappable.
-- Empty state: "No tables found" message.
+- [x] **F2. Visual Table Selector UI Instead of Text Input for Table Number**
+- while placing order  the currently user typing the table instead of list a list of table with icon and number order actived tables should be disabled and while select the is not active order then user can easly order 
 
 
 
@@ -186,7 +160,7 @@ Additionally, when the user places a **new order** after the previous one was de
 
 ---
 
-- [ ] **13. Add an Error Boundary Component**
+- [] **13. Add an Error Boundary Component**
 
 - **Priority**: High
 - **Estimated Effort**: Small
