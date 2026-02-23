@@ -1,4 +1,4 @@
-import * as SecureStore from 'expo-secure-store';
+import { StorageService } from './storage';
 import { STORAGE_KEYS } from '@/constants/storage';
 
 /**
@@ -6,7 +6,7 @@ import { STORAGE_KEYS } from '@/constants/storage';
  */
 export const getAuthToken = async (): Promise<string | null> => {
   try {
-    return await SecureStore.getItemAsync(STORAGE_KEYS.AUTH_TOKEN);
+    return await StorageService.getAuthToken();
   } catch (error) {
     console.error('Error getting auth token:', error);
     return null;
