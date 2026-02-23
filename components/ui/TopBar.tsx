@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, Alert } from 'react-native';
+import { View, StyleSheet, Alert, Platform } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Text } from '@tamagui/core';
 import { XStack, YStack } from '@tamagui/stacks';
@@ -37,40 +37,48 @@ export function TopBar({
   const [popoverOpen, setPopoverOpen] = useState(false);
 
   const handleLogout = async () => {
-    Alert.alert(
-      'Logout',
-      'Are you sure you want to logout?',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Logout',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              // Call logout API and clear storage
-              await AuthService.logout();
+    const performLogout = async () => {
+      try {
+        // Call logout API and clear storage
+        await AuthService.logout();
 
-              // Call the onLogout callback to reset parent component state
-              // This will trigger navigation reset and show login screen
-              onLogout?.();
-            } catch (error) {
-              console.error('Error during logout:', error);
-              // Even if API call fails, clear local storage and logout
-              try {
-                await AuthService.logout();
-              } catch (clearError) {
-                console.error('Error clearing storage:', clearError);
-              }
-              // Always call onLogout to reset navigation
-              onLogout?.();
-            }
+        // Call the onLogout callback to reset parent component state
+        // This will trigger navigation reset and show login screen
+        onLogout?.();
+      } catch (error) {
+        console.error('Error during logout:', error);
+        // Even if API call fails, clear local storage and logout
+        try {
+          await AuthService.logout();
+        } catch (clearError) {
+          console.error('Error clearing storage:', clearError);
+        }
+        // Always call onLogout to reset navigation
+        onLogout?.();
+      }
+    };
+
+    if (Platform.OS === 'web') {
+      if (window.confirm('Are you sure you want to logout?')) {
+        performLogout();
+      }
+    } else {
+      Alert.alert(
+        'Logout',
+        'Are you sure you want to logout?',
+        [
+          {
+            text: 'Cancel',
+            style: 'cancel',
           },
-        },
-      ]
-    );
+          {
+            text: 'Logout',
+            style: 'destructive',
+            onPress: performLogout,
+          },
+        ]
+      );
+    }
   };
 
   return (

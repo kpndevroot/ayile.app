@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ScrollView, Alert, Dimensions, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { ScrollView, Alert, Dimensions, TouchableOpacity, ActivityIndicator, Platform } from 'react-native';
 import { YStack, XStack } from '@tamagui/stacks';
 import { Text } from '@tamagui/core';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -38,40 +38,48 @@ export default function StaffProfileScreen() {
     };
 
     const handleLogout = async () => {
-        Alert.alert(
-            'Logout',
-            'Are you sure you want to logout?',
-            [
-                {
-                    text: 'Cancel',
-                    style: 'cancel',
-                },
-                {
-                    text: 'Logout',
-                    style: 'destructive',
-                    onPress: async () => {
-                        setLoading(true);
-                        try {
+        const performLogout = async () => {
+            setLoading(true);
+            try {
 
-                            // Clear storage explicitly just in case
-                            await StorageService.clearAll();
+                // Clear storage explicitly just in case
+                await StorageService.clearAll();
 
 
-                            await AuthService.logout();
+                await AuthService.logout();
 
-                            // Navigate to root which loads (tabs)/index.tsx -> LoginScreen
-                            router.replace('/');
-                        } catch (error) {
-                            console.error('Logout failed:', error);
-                            // Ensure redirect happens even on error
-                            router.replace('/');
-                        } finally {
-                            setLoading(false);
-                        }
+                // Navigate to root which loads (tabs)/index.tsx -> LoginScreen
+                router.replace('/');
+            } catch (error) {
+                console.error('Logout failed:', error);
+                // Ensure redirect happens even on error
+                router.replace('/');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        if (Platform.OS === 'web') {
+            if (window.confirm('Are you sure you want to logout?')) {
+                performLogout();
+            }
+        } else {
+            Alert.alert(
+                'Logout',
+                'Are you sure you want to logout?',
+                [
+                    {
+                        text: 'Cancel',
+                        style: 'cancel',
                     },
-                },
-            ]
-        );
+                    {
+                        text: 'Logout',
+                        style: 'destructive',
+                        onPress: performLogout,
+                    },
+                ]
+            );
+        }
     };
 
     const ProfileItem = ({ icon: Icon, label, value, color = DesignTokens.colors.brown[900] }: any) => (
