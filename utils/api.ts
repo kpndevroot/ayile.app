@@ -34,29 +34,25 @@ export const authenticatedFetch = async (
 };
 
 /**
- * Parses QR code URL to extract restaurant ID
- * Supports formats:
- * - /restaurant/{id}/order
- * - /restaurant/{id}/table/{tableId}
- * - http://host/restaurant/{id}/order
+ * Parses QR code data to extract restaurant ID.
+ * Supports:
+ * - 4-character alphanumeric short code (e.g. "A1B2") — primary format
+ * - URL containing the short code (e.g. /r/A1B2 or /restaurant/A1B2)
  */
 export const parseQRCode = (data: string): { restaurantId: string } | null => {
-  // Match restaurant ID from various URL patterns
-  const urlPatterns = [
-    /\/restaurant\/([a-f0-9-]{36})\/order/i,  // /restaurant/{uuid}/order
-    /\/restaurant\/([a-f0-9-]{36})\/table/i,  // /restaurant/{uuid}/table
-    /\/restaurant\/([a-f0-9-]{36})/i,         // /restaurant/{uuid}
-  ];
-  
-  for (const pattern of urlPatterns) {
-    const match = data.match(pattern);
-    if (match && match[1]) {
-      return {
-        restaurantId: match[1],
-      };
-    }
+  const trimmed = data.trim();
+
+  // Short code: exactly 4 alphanumeric characters
+  if (/^[A-Z0-9]{4}$/i.test(trimmed)) {
+    return { restaurantId: trimmed.toUpperCase() };
   }
-  
+
+  // URL containing a short code segment: /r/XXXX or /restaurant/XXXX
+  const urlMatch = trimmed.match(/\/(?:r|restaurant)\/([A-Z0-9]{4})(?:[/?#]|$)/i);
+  if (urlMatch) {
+    return { restaurantId: urlMatch[1].toUpperCase() };
+  }
+
   return null;
 };
 

@@ -108,7 +108,7 @@ export default function HomeScreen() {
       setScanning(false);
       setShowScanner(false);
 
-      const response = await fetch(`${API_BASE_URL}/api/restaurants/${restaurantId}`);
+      const response = await fetch(`${API_BASE_URL}/api/restaurants/by-qr/${restaurantId}`);
       const data = await response.json();
 
       if (response.ok && data.restaurant) {

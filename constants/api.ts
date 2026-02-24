@@ -1,5 +1,13 @@
 export const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL
 
+/**
+ * Base URL for customer-facing restaurant ordering pages.
+ * Used to construct QR code URLs — never stored in the database.
+ * Local dev: http://localhost:8080  |  Production: https://ayile.in
+ */
+export const RESTAURANT_BASE_URL =
+  process.env.EXPO_PUBLIC_RESTAURANT_BASE_URL ?? 'http://localhost:8080'
+
 export const API_ENDPOINTS = {
   AUTH: {
     LOGIN: '/api/auth/login',

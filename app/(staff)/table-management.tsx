@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/Button';
 import { Plus, X, Download, Printer } from '@tamagui/lucide-icons';
 import { QRCodeDisplay } from '@/components/ui/QRCodeDisplay';
 import { StaffService, Table } from '@/services/staffService';
-import { API_BASE_URL } from '@/constants/api';
+import { RESTAURANT_BASE_URL } from '@/constants/api';
 import { StorageService } from '@/utils/storage';
 
 /**
@@ -23,6 +23,7 @@ export default function TableManagementScreen() {
   const [loading, setLoading] = useState(true);
   const [tables, setTables] = useState<Table[]>([]);
   const [restaurantId, setRestaurantId] = useState<string | null>(null);
+  const [qrShortCode, setQrShortCode] = useState<string | null>(null);
 
   useEffect(() => {
     loadTables();
@@ -36,6 +37,9 @@ export default function TableManagementScreen() {
       setRestaurantId(rid);
       
       if (rid) {
+        const restaurantDetails = await StaffService.getRestaurantDetails();
+        setQrShortCode(restaurantDetails?.qrShortCode ?? null);
+
         const tablesData = await StaffService.getTables();
         // Map tables to include order status
         const tablesWithStatus: Table[] = tablesData.map((table): Table => {
@@ -63,13 +67,9 @@ export default function TableManagementScreen() {
     setShowQRModal(true);
   };
 
-  const getQRCodeValue = (tableId: string) => {
-    if (!restaurantId) return '';
-    const table = tables.find(t => t.id === tableId);
-    if (table) {
-      return `${API_BASE_URL}/restaurant/${restaurantId}/table/${table.uniqueId}`;
-    }
-    return '';
+  const getQRCodeValue = (_tableId: string) => {
+    if (!qrShortCode) return '';
+    return `${RESTAURANT_BASE_URL}/r/${qrShortCode}`;
   };
 
   return (

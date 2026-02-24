@@ -139,7 +139,7 @@ function WebQRScanner({ onScanSuccess, onClose }: QRScannerProps) {
         await StorageService.setScanned(true);
         onScanSuccess(parsed.restaurantId);
       } else {
-        setError('Invalid QR code. Please try a valid restaurant QR code.');
+        setError('Invalid QR code. Please scan a valid restaurant code.');
         setScanned(false);
         // Resume scanning after brief pause
         setTimeout(() => {
@@ -160,7 +160,7 @@ function WebQRScanner({ onScanSuccess, onClose }: QRScannerProps) {
 
   const handleManualSubmit = async () => {
     if (!manualInput.trim()) {
-      setError('Please enter a restaurant URL or code');
+      setError('Please enter the 4-character table code');
       return;
     }
     try {
@@ -170,7 +170,7 @@ function WebQRScanner({ onScanSuccess, onClose }: QRScannerProps) {
         await StorageService.setScanned(true);
         onScanSuccess(parsed.restaurantId);
       } else {
-        setError('Invalid restaurant URL or code.');
+        setError('Invalid code. Enter the 4-character code from your table (e.g. A1B2).');
       }
     } catch (err) {
       setError('Failed to process code.');
@@ -240,10 +240,10 @@ function WebQRScanner({ onScanSuccess, onClose }: QRScannerProps) {
           </Text>
           <Text fontSize={DesignTokens.typography.fontSize.md} color={DesignTokens.colors.charcoal[300]} textAlign="center">
             {isUnsupported
-              ? 'Camera requires HTTPS. Use the secure URL or enter the code manually:'
+              ? 'Camera is unavailable. Enter the 4-character code from the restaurant table:'
               : isDenied
-                ? 'Tap "Try Again" to allow camera, or enter the code manually:'
-                : 'Paste the restaurant URL or enter the code below:'}
+                ? 'Tap "Try Again" to allow camera, or enter the 4-character table code:'
+                : 'Enter the 4-character code from the restaurant table (e.g. A1B2):'}
           </Text>
 
           {isDenied && (
@@ -259,9 +259,10 @@ function WebQRScanner({ onScanSuccess, onClose }: QRScannerProps) {
             style={styles.webInput}
             value={manualInput}
             onChangeText={(text) => { setManualInput(text); setError(''); }}
-            placeholder="https://ayile.in/r/abc123 or restaurant code"
+            placeholder="Enter 4-character code (e.g. A1B2)"
             placeholderTextColor={DesignTokens.colors.charcoal[500]}
-            autoCapitalize="none"
+            autoCapitalize="characters"
+            maxLength={4}
             autoCorrect={false}
             onSubmitEditing={handleManualSubmit}
           />
